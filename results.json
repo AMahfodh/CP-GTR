@@ -1,0 +1,494 @@
+{
+  "meta": {
+    "generated_at": "2026-08-12T18:07:34Z",
+    "mode": "real",
+    "provider": "cerebras",
+    "model": "gpt-oss-120b",
+    "temperature": 0.0,
+    "extract_seed": 42,
+    "extract_sample_n": 200
+  },
+  "tables": {
+    "table4": {
+      "rows": [
+        {
+          "source": "COPPA (16 C.F.R. pt. 312)",
+          "tier": "operative",
+          "spans": 153,
+          "proposed": 48,
+          "certified": 9
+        },
+        {
+          "source": "GDPR Art. 8",
+          "tier": "operative",
+          "spans": 4,
+          "proposed": 4,
+          "certified": 0
+        },
+        {
+          "source": "CCPA",
+          "tier": "operative",
+          "spans": 362,
+          "proposed": 52,
+          "certified": 4
+        },
+        {
+          "source": "UK AADC",
+          "tier": "operative",
+          "spans": 795,
+          "proposed": 49,
+          "certified": 8
+        },
+        {
+          "source": "UN CRC",
+          "tier": "normative",
+          "spans": 179,
+          "proposed": 47,
+          "certified": 3
+        }
+      ],
+      "total_spans": 1493,
+      "total_proposed": 200,
+      "total_certified": 24
+    },
+    "table5": {
+      "Unconstrained LLM": {
+        "Child (A=9)": {
+          "rate": 0.0,
+          "ci": [
+            0.0,
+            0.0
+          ]
+        },
+        "Teen (A=15)": {
+          "rate": 0.0,
+          "ci": [
+            0.0,
+            0.0
+          ]
+        },
+        "Adult (A=21)": {
+          "rate": 20.0,
+          "ci": [
+            0.0,
+            60.0
+          ]
+        }
+      },
+      "Few-Shot Prompted": {
+        "Child (A=9)": {
+          "rate": 20.0,
+          "ci": [
+            0.0,
+            60.0
+          ]
+        },
+        "Teen (A=15)": {
+          "rate": 20.0,
+          "ci": [
+            0.0,
+            60.0
+          ]
+        },
+        "Adult (A=21)": {
+          "rate": 60.0,
+          "ci": [
+            20.0,
+            100.0
+          ]
+        }
+      },
+      "Constitutional AI (RLAIF)": {
+        "Child (A=9)": {
+          "rate": 40.0,
+          "ci": [
+            0.0,
+            80.0
+          ]
+        },
+        "Teen (A=15)": {
+          "rate": 20.0,
+          "ci": [
+            0.0,
+            60.0
+          ]
+        },
+        "Adult (A=21)": {
+          "rate": 80.0,
+          "ci": [
+            40.0,
+            100.0
+          ]
+        }
+      },
+      "CP-GTR-Detect (ablation)": {
+        "Child (A=9)": {
+          "rate": 100.0,
+          "ci": [
+            100.0,
+            100.0
+          ]
+        },
+        "Teen (A=15)": {
+          "rate": 80.0,
+          "ci": [
+            40.0,
+            100.0
+          ]
+        },
+        "Adult (A=21)": {
+          "rate": 80.0,
+          "ci": [
+            40.0,
+            100.0
+          ]
+        }
+      },
+      "CP-GTR (Ours)": {
+        "Child (A=9)": {
+          "rate": 100.0,
+          "ci": [
+            100.0,
+            100.0
+          ]
+        },
+        "Teen (A=15)": {
+          "rate": 80.0,
+          "ci": [
+            40.0,
+            100.0
+          ]
+        },
+        "Adult (A=21)": {
+          "rate": 100.0,
+          "ci": [
+            100.0,
+            100.0
+          ]
+        }
+      }
+    },
+    "table6": {
+      "overall": {
+        "inst": [
+          0.8571428571428571,
+          0.9333333333333333,
+          0.8936170212765957
+        ],
+        "rel": [
+          0.875,
+          0.9333333333333333,
+          0.9032258064516129
+        ],
+        "all": [
+          0.8641975308641975,
+          0.9333333333333333,
+          0.8974358974358974
+        ]
+      },
+      "per_node": {
+        "ConsentProcess": [
+          0.8,
+          1.0,
+          0.888888888888889
+        ],
+        "DataProcessing": [
+          0.8,
+          1.0,
+          0.888888888888889
+        ],
+        "DataSubject": [
+          0.8,
+          1.0,
+          0.888888888888889
+        ],
+        "DurationBounded": [
+          1.0,
+          0.5,
+          0.6666666666666666
+        ],
+        "DurationIndefinite": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Operator": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "ParentalConsent": [
+          1.0,
+          0.75,
+          0.8571428571428571
+        ],
+        "RetentionClause": [
+          0.75,
+          0.75,
+          0.75
+        ],
+        "ThirdParty": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Withdrawal": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "per_edge": {
+        "grants": [
+          0.8,
+          1.0,
+          0.888888888888889
+        ],
+        "hasDuration": [
+          1.0,
+          0.75,
+          0.8571428571428571
+        ],
+        "permits": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "requires": [
+          1.0,
+          0.75,
+          0.8571428571428571
+        ],
+        "sellsTo": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "subjectOf": [
+          0.8,
+          1.0,
+          0.888888888888889
+        ]
+      },
+      "per_item": [
+        [
+          "g00",
+          1.0,
+          1.0,
+          1.0
+        ],
+        [
+          "g01",
+          1.0,
+          1.0,
+          1.0
+        ],
+        [
+          "g02",
+          1.0,
+          1.0,
+          1.0
+        ],
+        [
+          "g03",
+          0.375,
+          1.0,
+          0.5454545454545454
+        ],
+        [
+          "g04",
+          1.0,
+          1.0,
+          1.0
+        ],
+        [
+          "g05",
+          0.75,
+          1.0,
+          0.8571428571428571
+        ],
+        [
+          "g06",
+          0.375,
+          1.0,
+          0.5454545454545454
+        ],
+        [
+          "g07",
+          1.0,
+          1.0,
+          1.0
+        ],
+        [
+          "g08",
+          1.0,
+          1.0,
+          1.0
+        ],
+        [
+          "g09",
+          1.0,
+          1.0,
+          1.0
+        ],
+        [
+          "g10",
+          1.0,
+          1.0,
+          1.0
+        ],
+        [
+          "g11",
+          1.0,
+          0.5833333333333334,
+          0.7368421052631579
+        ]
+      ],
+      "counts": {
+        "inst": [
+          42,
+          49,
+          45
+        ],
+        "rel": [
+          28,
+          32,
+          30
+        ],
+        "all": [
+          70,
+          81,
+          75
+        ]
+      }
+    },
+    "table7a": {
+      "rows": [
+        [
+          "Full pipeline",
+          {
+            "term_rate": "100%",
+            "nonterm": 0,
+            "strat_reject": 1,
+            "repair_success": 1.0,
+            "median_cascade": 1,
+            "unsound": 0
+          }
+        ],
+        [
+          "--CPA",
+          {
+            "term_rate": "100%",
+            "nonterm": 0,
+            "strat_reject": 1,
+            "repair_success": 1.0,
+            "median_cascade": 1,
+            "unsound": 2
+          }
+        ],
+        [
+          "--Strat",
+          {
+            "term_rate": "---",
+            "nonterm": 0,
+            "strat_reject": 0,
+            "repair_success": 1.0,
+            "median_cascade": "---",
+            "unsound": 1
+          }
+        ],
+        [
+          "--CPA,--Strat",
+          {
+            "term_rate": "---",
+            "nonterm": 1,
+            "strat_reject": 0,
+            "repair_success": 0.9333333333333333,
+            "median_cascade": "---",
+            "unsound": 3
+          }
+        ]
+      ],
+      "unsound_log": [
+        [
+          "--CPA",
+          "r_BAD",
+          "CPA",
+          "reject:non-joinable-CP"
+        ],
+        [
+          "--CPA",
+          "r_RET_BAD",
+          "CPA",
+          "reject:non-joinable-CP"
+        ],
+        [
+          "--Strat",
+          "r_BAD",
+          "CPA",
+          "reject:non-joinable-CP"
+        ],
+        [
+          "--CPA,--Strat",
+          "r_BAD",
+          "CPA",
+          "reject:non-joinable-CP"
+        ],
+        [
+          "--CPA,--Strat",
+          "r_RET_BAD",
+          "CPA",
+          "reject:non-joinable-CP"
+        ],
+        [
+          "--CPA,--Strat",
+          "r_FLIP2",
+          "stratification",
+          "reject:no-measure"
+        ]
+      ]
+    },
+    "table8b": [
+      [
+        "Full pipeline",
+        {
+          "term_rate": "100%",
+          "nonterm": 0,
+          "strat_reject": 165,
+          "repair_success": 1.0,
+          "median_cascade": 0.0
+        }
+      ],
+      [
+        "--CPA",
+        {
+          "term_rate": "100%",
+          "nonterm": 0,
+          "strat_reject": 165,
+          "repair_success": 1.0,
+          "median_cascade": 0.0
+        }
+      ],
+      [
+        "--Strat",
+        {
+          "term_rate": "---",
+          "nonterm": 12,
+          "strat_reject": 0,
+          "repair_success": 0.0,
+          "median_cascade": "---"
+        }
+      ],
+      [
+        "--CPA,--Strat",
+        {
+          "term_rate": "---",
+          "nonterm": 12,
+          "strat_reject": 0,
+          "repair_success": 0.0,
+          "median_cascade": "---"
+        }
+      ]
+    ]
+  }
+}

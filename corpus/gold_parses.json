@@ -1,0 +1,74 @@
+[
+  {
+    "id": "g00", "jurisdiction": "EU",
+    "text": "We collect your email address to send you updates. By signing up, you consent to this processing.",
+    "nodes": ["DataSubject", "ConsentProcess", "DataProcessing"],
+    "edges": [[0, "subjectOf", 1], [1, "grants", 2]]
+  },
+  {
+    "id": "g01", "jurisdiction": "EU",
+    "text": "Where the child is below the age of sixteen, processing is lawful only with consent given by the holder of parental responsibility.",
+    "nodes": ["DataSubject", "ConsentProcess", "DataProcessing", "ParentalConsent"],
+    "edges": [[0, "subjectOf", 1], [1, "grants", 2], [1, "requires", 3]]
+  },
+  {
+    "id": "g02", "jurisdiction": "US",
+    "text": "The operator must obtain verifiable parental consent before collecting personal information from a child. Consent may be withdrawn at any time.",
+    "nodes": ["DataSubject", "ConsentProcess", "DataProcessing", "ParentalConsent", "Withdrawal"],
+    "edges": [[0, "subjectOf", 1], [1, "grants", 2], [1, "requires", 3], [1, "permits", 4]]
+  },
+  {
+    "id": "g03", "jurisdiction": "US-CA",
+    "text": "We may sell your personal information to selected third-party advertising partners for their own marketing purposes.",
+    "nodes": ["Operator", "ThirdParty"],
+    "edges": [[0, "sellsTo", 1]]
+  },
+  {
+    "id": "g04", "jurisdiction": "EU",
+    "text": "We collect your email to send updates and we may sell your personal information to advertising partners.",
+    "nodes": ["DataSubject", "ConsentProcess", "DataProcessing", "Operator", "ThirdParty"],
+    "edges": [[0, "subjectOf", 1], [1, "grants", 2], [3, "sellsTo", 4]]
+  },
+  {
+    "id": "g05", "jurisdiction": "UK",
+    "text": "Your data will be stored securely. We retain it indefinitely.",
+    "nodes": ["RetentionClause", "DurationIndefinite"],
+    "edges": [[0, "hasDuration", 1]]
+  },
+  {
+    "id": "g06", "jurisdiction": "US",
+    "text": "Personal information is retained for 12 months and then deleted.",
+    "nodes": ["RetentionClause", "DurationBounded"],
+    "edges": [[0, "hasDuration", 1]]
+  },
+  {
+    "id": "g07", "jurisdiction": "EU",
+    "text": "By signing up you consent to processing, and you may withdraw your consent at any time.",
+    "nodes": ["DataSubject", "ConsentProcess", "DataProcessing", "Withdrawal"],
+    "edges": [[0, "subjectOf", 1], [1, "grants", 2], [1, "permits", 3]]
+  },
+  {
+    "id": "g08", "jurisdiction": "UK",
+    "text": "Where the user is under the age of 13, the holder of parental responsibility must consent, data is retained indefinitely, and the operator may sell personal information to partners.",
+    "nodes": ["DataSubject", "ConsentProcess", "DataProcessing", "ParentalConsent", "RetentionClause", "DurationIndefinite", "Operator", "ThirdParty"],
+    "edges": [[0, "subjectOf", 1], [1, "grants", 2], [1, "requires", 3], [4, "hasDuration", 5], [6, "sellsTo", 7]]
+  },
+  {
+    "id": "g09", "jurisdiction": "US",
+    "text": "This notice explains our cookie categories and how to manage browser preferences.",
+    "nodes": [],
+    "edges": []
+  },
+  {
+    "id": "g10", "jurisdiction": "US-CA",
+    "text": "We collect personal information to provide the service. You consent to this processing when you create an account. We do not sell your personal information.",
+    "nodes": ["DataSubject", "ConsentProcess", "DataProcessing"],
+    "edges": [[0, "subjectOf", 1], [1, "grants", 2]]
+  },
+  {
+    "id": "g11", "jurisdiction": "EU",
+    "text": "Consent from the parent is required, data is kept for 24 months, and consent can be withdrawn.",
+    "nodes": ["DataSubject", "ConsentProcess", "DataProcessing", "ParentalConsent", "Withdrawal", "RetentionClause", "DurationBounded"],
+    "edges": [[0, "subjectOf", 1], [1, "grants", 2], [1, "requires", 3], [1, "permits", 4], [5, "hasDuration", 6]]
+  }
+]

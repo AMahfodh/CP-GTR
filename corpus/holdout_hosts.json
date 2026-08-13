@@ -1,0 +1,144 @@
+[
+  {
+    "id": "h001",
+    "description": "Child, EU: bare consent process, no parental consent, no withdrawal option.",
+    "expected_rules": ["r_PC", "r_WD"],
+    "context": {"A": 9, "J": "EU"},
+    "nodes": [
+      {"id": "ds", "type": "DataSubject"},
+      {"id": "cp", "type": "ConsentProcess"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "ds", "tgt": "cp", "type": "subjectOf"}
+    ]
+  },
+  {
+    "id": "h002",
+    "description": "Teen, EU: same as h001 -- still under the GDPR Art. 8 default age gate.",
+    "expected_rules": ["r_PC", "r_WD"],
+    "context": {"A": 15, "J": "EU"},
+    "nodes": [
+      {"id": "ds", "type": "DataSubject"},
+      {"id": "cp", "type": "ConsentProcess"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "ds", "tgt": "cp", "type": "subjectOf"}
+    ]
+  },
+  {
+    "id": "h003",
+    "description": "Adult, EU: consent process with no withdrawal option. Parental consent rule does not apply at this age.",
+    "expected_rules": ["r_WD"],
+    "context": {"A": 21, "J": "EU"},
+    "nodes": [
+      {"id": "cp", "type": "ConsentProcess"}
+    ],
+    "edges": []
+  },
+  {
+    "id": "h004",
+    "description": "Adult, EU: indefinite retention clause, no consent-process issue present.",
+    "expected_rules": ["r_RET"],
+    "context": {"A": 21, "J": "EU"},
+    "nodes": [
+      {"id": "rc", "type": "RetentionClause"},
+      {"id": "di", "type": "DurationIndefinite"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "rc", "tgt": "di", "type": "hasDuration"}
+    ]
+  },
+  {
+    "id": "h005",
+    "description": "Child, EU: consent-process issue plus an unlawful third-party data sale in the same document.",
+    "expected_rules": ["r_PC", "r_WD", "r_SALE"],
+    "context": {"A": 9, "J": "EU"},
+    "nodes": [
+      {"id": "ds", "type": "DataSubject"},
+      {"id": "cp", "type": "ConsentProcess"},
+      {"id": "op", "type": "Operator"},
+      {"id": "tp", "type": "ThirdParty"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "ds", "tgt": "cp", "type": "subjectOf"},
+      {"id": "e2", "src": "op", "tgt": "tp", "type": "sellsTo"}
+    ]
+  },
+  {
+    "id": "h006",
+    "description": "Child, US: third-party data sale only (US-CA/COPPA jurisdiction; the EU-only consent rules do not apply here).",
+    "expected_rules": ["r_SALE"],
+    "context": {"A": 9, "J": "US"},
+    "nodes": [
+      {"id": "op", "type": "Operator"},
+      {"id": "tp", "type": "ThirdParty"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "op", "tgt": "tp", "type": "sellsTo"}
+    ]
+  },
+  {
+    "id": "h007",
+    "description": "Teen, EU: consent-process issue plus an indefinite retention clause -- a three-rule cascade.",
+    "expected_rules": ["r_PC", "r_WD", "r_RET"],
+    "context": {"A": 15, "J": "EU"},
+    "nodes": [
+      {"id": "ds", "type": "DataSubject"},
+      {"id": "cp", "type": "ConsentProcess"},
+      {"id": "rc", "type": "RetentionClause"},
+      {"id": "di", "type": "DurationIndefinite"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "ds", "tgt": "cp", "type": "subjectOf"},
+      {"id": "e2", "src": "rc", "tgt": "di", "type": "hasDuration"}
+    ]
+  },
+  {
+    "id": "h008",
+    "description": "Teen, US: third-party data sale only, same rule as h006 but a different age within the covered range.",
+    "expected_rules": ["r_SALE"],
+    "context": {"A": 15, "J": "US"},
+    "nodes": [
+      {"id": "op", "type": "Operator"},
+      {"id": "tp", "type": "ThirdParty"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "op", "tgt": "tp", "type": "sellsTo"}
+    ]
+  },
+  {
+    "id": "h009",
+    "description": "Child, EU: parental consent is already present (so r_PC's NAC blocks it), but withdrawal is still missing -- tests that r_PC correctly does not re-fire on an already-satisfied precondition.",
+    "expected_rules": ["r_WD"],
+    "context": {"A": 9, "J": "EU"},
+    "nodes": [
+      {"id": "ds", "type": "DataSubject"},
+      {"id": "cp", "type": "ConsentProcess"},
+      {"id": "pc", "type": "ParentalConsent"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "ds", "tgt": "cp", "type": "subjectOf"},
+      {"id": "e2", "src": "cp", "tgt": "pc", "type": "requires"}
+    ]
+  },
+  {
+    "id": "h010",
+    "description": "Teen, EU: parental consent AND withdrawal are already present (both NACs satisfied), but retention is still indefinite -- tests that the repair only touches the one remaining violation and leaves the rest of the (larger) graph untouched.",
+    "expected_rules": ["r_RET"],
+    "context": {"A": 15, "J": "EU"},
+    "nodes": [
+      {"id": "ds", "type": "DataSubject"},
+      {"id": "cp", "type": "ConsentProcess"},
+      {"id": "pc", "type": "ParentalConsent"},
+      {"id": "w", "type": "Withdrawal"},
+      {"id": "rc", "type": "RetentionClause"},
+      {"id": "di", "type": "DurationIndefinite"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "ds", "tgt": "cp", "type": "subjectOf"},
+      {"id": "e2", "src": "cp", "tgt": "pc", "type": "requires"},
+      {"id": "e3", "src": "cp", "tgt": "w", "type": "permits"},
+      {"id": "e4", "src": "rc", "tgt": "di", "type": "hasDuration"}
+    ]
+  }
+]

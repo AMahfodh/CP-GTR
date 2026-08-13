@@ -1,0 +1,64 @@
+[
+  {
+    "id": "probe_001",
+    "description": "SYNTHETIC mechanism-validation fixture, not a realistic non-compliant document. A bare TagA node is exactly what r_FLIP1/r_FLIP2 (cpgtr/library.py) ping-pong on. Used only by Table 7a (mechanism validation) to demonstrate that the full pipeline / --CPA remain safe while --CPA,--Strat lets a real infinite loop through, confirmed by cycle detection. Not used for Table 7b (deployment realism / real extraction), since no real extracted rule would use these synthetic types.",
+    "expected_rules": ["r_FLIP1", "r_FLIP2"],
+    "context": {"A": 9, "J": "EU"},
+    "nodes": [
+      {"id": "x", "type": "TagA"}
+    ],
+    "edges": []
+  },
+  {
+    "id": "probe_002_uk_retention_a09",
+    "description": "SYNTHETIC mechanism-validation fixture: an indefinite-retention host under UK jurisdiction. r_RET (the real, correct rule) only guards J=='EU', so this host is uncontested for r_RET_BAD (guard: J in EU,UK), which is admitted only under --CPA (rejected as a non-joinable critical pair against r_RET under the full pipeline, since both match the identical RetentionClause+DurationIndefinite pattern -- see r_RET_BAD's docstring in library.py). This is what makes 'CPA does measurable work' visible in Table 7a: full pipeline leaves this host with no applicable rule (0 steps, a real coverage gap outside this fixture's scope), while --CPA's admitted r_RET_BAD fires and wrongly deletes the indefinite-duration node instead of bounding it (1 step). Repeated across several ages (probe_002..005) rather than once, so the effect has enough weight to move the aggregate median/repair-success columns, not just the per-host trace -- one instance is real but statistically invisible in a small aggregate. Not used for Table 7b.",
+    "expected_rules": ["r_RET_BAD"],
+    "context": {"A": 9, "J": "UK"},
+    "nodes": [
+      {"id": "rc", "type": "RetentionClause"},
+      {"id": "di", "type": "DurationIndefinite"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "rc", "tgt": "di", "type": "hasDuration"}
+    ]
+  },
+  {
+    "id": "probe_003_uk_retention_a15",
+    "description": "Same fixture as probe_002, different age -- see its description.",
+    "expected_rules": ["r_RET_BAD"],
+    "context": {"A": 15, "J": "UK"},
+    "nodes": [
+      {"id": "rc", "type": "RetentionClause"},
+      {"id": "di", "type": "DurationIndefinite"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "rc", "tgt": "di", "type": "hasDuration"}
+    ]
+  },
+  {
+    "id": "probe_004_uk_retention_a18",
+    "description": "Same fixture as probe_002, different age -- see its description.",
+    "expected_rules": ["r_RET_BAD"],
+    "context": {"A": 18, "J": "UK"},
+    "nodes": [
+      {"id": "rc", "type": "RetentionClause"},
+      {"id": "di", "type": "DurationIndefinite"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "rc", "tgt": "di", "type": "hasDuration"}
+    ]
+  },
+  {
+    "id": "probe_005_uk_retention_a21",
+    "description": "Same fixture as probe_002, different age -- see its description.",
+    "expected_rules": ["r_RET_BAD"],
+    "context": {"A": 21, "J": "UK"},
+    "nodes": [
+      {"id": "rc", "type": "RetentionClause"},
+      {"id": "di", "type": "DurationIndefinite"}
+    ],
+    "edges": [
+      {"id": "e1", "src": "rc", "tgt": "di", "type": "hasDuration"}
+    ]
+  }
+]
