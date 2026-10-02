@@ -1,11 +1,56 @@
-"""Download the primary statutory corpus for LegiSafe-Bench.
+"""Fetch primary statutory texts for LegiSafe-Bench (step 1 of the corpus build).
 
-Fetches authoritative, pre-extraction source text. Be a good citizen: this runs
-locally (NOT in any sandbox), sends a descriptive User-Agent, and pauses between
-requests. If a publisher blocks automated access, the script prints the URL so
-you can save the page manually -- the corpus is only four documents.
+IMPORTANT: the raw statutory texts are NOT distributed with this repository.
+Replicators must obtain them from the official publishers (the URLs are listed
+in MANIFEST below) and place the resulting text files in ``corpus/raw/``.
+Publisher pages change over time, so the text you obtain may differ slightly
+from the snapshot used in the paper, and the span counts reported by
+``corpus/segment_corpus.py`` may shift accordingly. Statutory currency must be
+confirmed independently; nothing here is legal advice.
 
-Optional (recommended) for clean text: pip install beautifulsoup4 lxml requests
+What this script automates (MANIFEST, one request every 2 seconds):
+
+    name                jurisdiction  source                         writes
+    coppa_16cfr312      US            eCFR, 16 CFR Part 312 (COPPA)  .xml + .txt
+    gdpr_reg2016_679    EU            EUR-Lex, Regulation 2016/679   .html + .txt
+    ccpa_civ_1798       US-CA         California Civil Code 1798.x   .html + .txt
+    uk_aadc             UK            ICO Age Appropriate Design     .html + .txt
+                                      Code guidance page
+
+Each fetch saves the raw response as ``corpus/raw/<name>.<kind>`` and a
+tag-stripped copy as ``corpus/raw/<name>.txt``. Tag stripping uses BeautifulSoup
+when installed (``pip install requests beautifulsoup4 lxml``) and a crude regex
+fallback otherwise; the fallback leaves HTML entities undecoded, which the
+segmenter handles. If a publisher blocks automated access, the script prints
+the human-readable URL; save the page manually as ``corpus/raw/<name>.txt``.
+
+What this script does NOT automate. ``corpus/segment_corpus.py`` expects these
+file names in ``corpus/raw/``:
+
+    coppa_16cfr312.txt      produced by this script
+    gdpr_reg2016_679.txt    produced by this script
+    ccpa_civ_1798.txt       produced by this script
+    uk_aadc2.txt            NOT produced by this script (see below)
+    OHCHR.txt               NOT produced by this script (see below)
+
+  * UK AADC: the benchmark uses ``uk_aadc2.txt``, text extracted from the ICO
+    Code of Practice PDF (page-break banners included; the segmenter removes
+    them). The MANIFEST entry ``uk_aadc`` instead writes ``uk_aadc.txt`` from
+    the ICO web page, which is a different document; the segmenter would also
+    process it if left in ``corpus/raw/``. To reproduce the paper's corpus,
+    extract the PDF text yourself, save it as ``uk_aadc2.txt``, and do not
+    keep ``uk_aadc.txt`` in the folder.
+  * UN CRC: not in MANIFEST. Save the text of the Convention on the Rights of
+    the Child from the OHCHR website (https://www.ohchr.org) as ``OHCHR.txt``.
+
+Run order (from the repository root):
+
+    python corpus/download_corpus.py     # fetch + convert to .txt
+    # ... add uk_aadc2.txt and OHCHR.txt manually, remove uk_aadc.txt ...
+    python corpus/segment_corpus.py      # writes corpus/provisions.json
+
+Requires: ``requests`` (hard requirement); ``beautifulsoup4`` and ``lxml``
+are optional.
 """
 import os
 import re

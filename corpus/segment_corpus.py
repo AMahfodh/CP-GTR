@@ -1,32 +1,63 @@
-"""Segment downloaded statutes into provision spans tagged with (J, tau).
+"""Segment raw statutory texts into provision spans tagged with (J, tau).
 
-Output: corpus/provisions.json -- the input to the Stage-1 LLM extractor.
+Step 2 of the corpus build. Reads every ``*.txt`` file in ``corpus/raw/`` and
+writes ``corpus/provisions.json``, the input to the Stage-1 extractor
+(``cpgtr/extract.py``). Each record has the fields ``id`` (``prov_NNNN``),
+``source`` (raw file name), ``jurisdiction`` (J), ``tau`` (an age threshold
+parsed from the span text, or ``None``) and ``text`` (the span, truncated to
+STORE_CHARS characters).
 
-Segmentation is per-source, not a single generic splitter, because the raw
-sources genuinely differ in structural marker AND in what a raw file actually
-contains:
-  - GDPR: the raw file is the FULL regulation (99 articles + recitals), but
-    the benchmark targets Article 8 specifically (three numbered paragraphs,
-    per the manuscript) -- segment_gdpr() extracts just that article before
-    splitting it into sub-paragraph spans.
-  - COPPA: the raw text has un-decoded HTML entities (`&#xA7;` instead of the
-    literal `§` the generic splitter looks for), left over from a fetch where
-    BeautifulSoup wasn't available (download_corpus.py's crude regex fallback
-    strips tags but doesn't decode entities). Fixed generically for every
-    source by decoding entities before segmenting, not just for COPPA.
-  - CCPA: the raw text has ZERO blank-line breaks at all (stripped somewhere
-    in scraping/formatting), so the generic blank-line splitter never fires
-    and the whole 172KB file collapses into a single span, silently
-    truncated to 2000 characters -- almost the entire statute was being
-    discarded. CCPA's real structural marker is numbered section headers
-    like "1798.100." -- segment_ccpa() splits on those instead.
-  - UK AADC: PDF-extracted text with page-break banners and lone page-number
-    lines scattered through it, which fragment real paragraphs into spurious
-    blank-line-adjacent spans -- segment_uk_aadc() strips that noise first.
-  - UN CRC (OHCHR): the generic splitter already produces a plausible span
-    count for this source; no per-source override needed.
+The raw statutory texts are NOT distributed with this repository. Obtain them
+from the official publishers as described in ``corpus/download_corpus.py``,
+which automates only part of the job. The segmenter expects these files in
+``corpus/raw/``:
 
+    coppa_16cfr312.txt      US      16 CFR Part 312 (COPPA), from eCFR
+    gdpr_reg2016_679.txt    EU      Regulation (EU) 2016/679, full text from
+                                    EUR-Lex; only Article 8 is segmented
+    ccpa_civ_1798.txt       US-CA   California Civil Code 1798.x (CCPA)
+    uk_aadc2.txt            UK      ICO Age Appropriate Design Code, text
+                                    extracted from the PDF
+    OHCHR.txt               UN      UN Convention on the Rights of the Child
 
+The jurisdiction is chosen from the file name (see JMAP). Any other ``*.txt``
+file in ``corpus/raw/`` is also segmented, with the generic splitter and
+jurisdiction "UNKNOWN", so keep that folder to the five files above
+(notably, remove the ``uk_aadc.txt`` that the downloader writes).
+
+Run order, from the repository root:
+
+    python corpus/download_corpus.py     # fetch the sources it covers
+    # add uk_aadc2.txt and OHCHR.txt by hand (not covered by the downloader)
+    python corpus/segment_corpus.py      # writes corpus/provisions.json
+
+With the snapshot of the texts used for the paper this produces 1,493 spans
+(UK AADC 795, CCPA 362, UN CRC 179, COPPA 153, GDPR Art. 8: 4). Texts fetched
+later may produce somewhat different counts.
+
+Segmentation is per source rather than one generic splitter, because the
+sources differ in structural marker and in what the raw file contains:
+
+  - GDPR: the raw file is the whole regulation, but the benchmark targets
+    Article 8 only. segment_gdpr() cuts the text between the "Article 8" and
+    "Article 9" headings and splits that article into sub-paragraph spans.
+  - COPPA: the text may contain undecoded HTML entities (for example
+    ``&#xA7;`` for the section sign), which happens when the text was saved
+    without BeautifulSoup. Every source is entity-decoded before segmenting.
+  - CCPA: the raw text has no blank lines, so a blank-line splitter would
+    return one giant span. segment_ccpa() splits on the numbered section
+    headers ("1798.100.", "1798.105.", ...) instead.
+  - UK AADC: PDF-extracted text, with page-break banners, lone page-number
+    lines and hard-wrapped lines. segment_uk_aadc() removes the page noise and
+    re-joins wrapped lines into sentence-level units before splitting.
+  - UN CRC (OHCHR): the generic splitter gives a sensible result; no
+    per-source function is needed.
+
+Spans longer than MAX_SPAN_CHARS are split further on lettered or numbered
+sub-section markers. validate() and the span-length check in main() raise an
+error instead of writing an implausible provisions.json (wrong per-source
+counts, one source dominating the corpus, or spans outside the length range).
+Inspect the output and correct it by hand if it still looks wrong.
 """
 import os
 import re
@@ -41,9 +72,9 @@ JMAP = {"coppa": "US", "gdpr": "EU", "ccpa": "US-CA", "uk_aadc": "UK", "OHCHR": 
 AGE_RE = re.compile(r"\b(?:under|below)\s+the\s+age\s+of\s+(\d{1,2})|\b(1[0-9])\s+years",
                     re.IGNORECASE)
 
-MAX_SPAN_CHARS = 5000     # validation ceiling, checked BEFORE the 2000-char storage cap
+MAX_SPAN_CHARS = 5000     # validation ceiling, checked BEFORE the STORE_CHARS cap
 MIN_SPAN_CHARS = 20       # validation floor
-STORE_CHARS = 2000        # cap span length for the extractor (existing behaviour)
+STORE_CHARS = 2000        # stored spans are truncated to this length
 
 
 def jurisdiction_of(fname):
@@ -61,15 +92,16 @@ def find_tau(text):
 
 
 def _generic_segment(text):
-    # split on blank lines / numbered section markers like "(1)", "§ 312.x", "Article N"
+    # Split on blank lines and on "Article N" / "§" markers; keep pieces >= 60 chars.
     parts = re.split(r"\n\s*\n|(?=^\s*Article\s+\d+)|(?=^\s*§)", text, flags=re.MULTILINE)
     return [p.strip() for p in parts if len(p.strip()) >= 60]
 
 
 def _strip_pdf_artifacts(text):
-    """Drop PDF-extraction page-break banners and lone page-number lines that
-    fragment real prose into spurious paragraph breaks (UK AADC is
-    PDF-derived: 146 banner lines / 1,371 blank lines out of 5,573 total)."""
+    """Drop page-break banners ("-- Page N --") and lone page-number lines.
+
+    PDF-derived text (the UK AADC) contains these, and they would otherwise
+    fragment real paragraphs into spurious spans."""
     cleaned = []
     for line in text.split("\n"):
         s = line.strip()
@@ -82,22 +114,20 @@ def _strip_pdf_artifacts(text):
 
 
 def _dewrap(text):
-    """PDF text extraction for this source hard-wraps every visual line onto
-    its own text line, and inserts blank lines at essentially arbitrary
-    points relative to real sentence/paragraph structure (verified: median
-    "paragraph" from naive blank-line splitting was 74 characters -- a single
-    wrapped line, not a paragraph; some blank-line pairs even land
-    mid-sentence). Blank lines are therefore not a reliable paragraph-boundary
-    signal in this source. Reconstruct logical units instead by joining
-    consecutive non-blank lines until one ends in terminal punctuation
-    (. ! ? :), which tracks actual sentence/clause boundaries regardless of
-    where the PDF extractor happened to wrap or insert a blank line.
+    """Rebuild logical paragraphs from hard-wrapped PDF text.
+
+    PDF extraction for this source puts every visual line on its own text
+    line and inserts blank lines at arbitrary points, sometimes mid-sentence,
+    so blank lines are not a reliable paragraph boundary. Instead, consecutive
+    non-blank lines are joined until one ends in terminal punctuation
+    (. ! ? :), which follows sentence and clause boundaries regardless of
+    where the extractor wrapped the text.
     """
     paragraphs, buf = [], []
     for raw in text.split("\n"):
         s = raw.rstrip("\r").strip()
         if not s:
-            continue   # NOT a reliable boundary here -- see docstring; ignore, don't flush
+            continue   # blank lines are ignored, not treated as boundaries
         buf.append(s)
         if re.search(r"[.!?:]\s*$", s):
             paragraphs.append(" ".join(buf))
@@ -108,9 +138,11 @@ def _dewrap(text):
 
 
 def segment_gdpr(text):
-    """Raw file is the full regulation; extract Article 8 only (the
-    benchmark's actual target), then split that article into its own
-    sub-paragraph spans."""
+    """Extract Article 8 from the full regulation and split it into spans.
+
+    Article 8 runs from its heading to the "Article 9" heading. Raises
+    RuntimeError if the "Article 8" heading is missing, rather than falling
+    back to segmenting the whole regulation."""
     m = re.search(r"^\s*Article\s+8\s*$", text, flags=re.MULTILINE)
     if not m:
         raise RuntimeError(
@@ -126,16 +158,21 @@ def segment_gdpr(text):
 
 
 def segment_ccpa(text):
-    """No blank-line breaks exist in this raw text at all; split on CCPA's
-    real numbered-section headers ("1798.100.", "1798.105.", ...) instead."""
+    """Split on CCPA section headers ("1798.100.", "1798.105.", ...).
+
+    The raw text has no blank lines, so numbered headers are the only
+    structural marker."""
     parts = re.split(r"(?=\b1798\.\d+(?:\.\d+)?\.\s)", text)
     return [p.strip() for p in parts if len(p.strip()) >= 60]
 
 
 def segment_uk_aadc(text):
+    """Strip PDF page noise, re-join wrapped lines, then split generically."""
     return _generic_segment(_dewrap(_strip_pdf_artifacts(text)))
 
 
+# Maps a substring of the raw file name to its segmenter. Files that match no
+# key use _generic_segment().
 SOURCE_SEGMENTERS = {
     "gdpr": segment_gdpr,
     "ccpa": segment_ccpa,
@@ -144,14 +181,13 @@ SOURCE_SEGMENTERS = {
 
 
 def _split_long_span(text, max_chars=MAX_SPAN_CHARS):
-    """A span that survives the primary per-source split but is still over
-    max_chars is usually a single long section with real internal structure
-    (nested lettered/numbered subsections, e.g. CCPA 1798.130's "(a)(1)(A)"),
-    not a mis-segmentation -- split further on top-level "(a)", "(1)", "(A)"
-    -style markers, recursing on pieces still too long. Gives up and returns
-    the piece as-is if no such marker is found (a genuinely long,
-    unstructured span); validate()/main()'s length check will still flag
-    that rather than silently accept it.
+    """Split an over-long span on sub-section markers such as "(a)", "(1)".
+
+    A span still longer than max_chars after the per-source split is usually
+    one long section with nested lettered or numbered sub-sections (for
+    example CCPA 1798.130). It is split on those markers, recursing on pieces
+    that are still too long. If no marker is found the span is returned
+    unchanged, and the length check in main() then rejects it.
     """
     if len(text) <= max_chars:
         return [text]
@@ -166,16 +202,16 @@ def _split_long_span(text, max_chars=MAX_SPAN_CHARS):
 
 
 def _normalize_whitespace(text):
-    """html.unescape() correctly turns "&nbsp;" into a literal U+00A0
-    non-breaking space rather than removing it, and a UTF-8 BOM can survive
-    at the start of a file -- normalize both to plain ASCII space / nothing
-    so downstream spans don't carry invisible characters into extraction
-    prompts."""
+    """Remove a UTF-8 BOM and turn non-breaking spaces into plain spaces.
+
+    html.unescape() maps "&nbsp;" to U+00A0 rather than a space; normalizing
+    keeps invisible characters out of the spans passed to the extractor."""
     return text.replace("﻿", "").replace("\xa0", " ")
 
 
 def segment_for(fname, text):
-    text = _normalize_whitespace(html.unescape(text))   # fixes COPPA's un-decoded "&#xA7;" -> "§", harmless elsewhere
+    # Decode HTML entities (e.g. "&#xA7;" -> section sign); harmless for clean text.
+    text = _normalize_whitespace(html.unescape(text))
     for key, fn in SOURCE_SEGMENTERS.items():
         if key in fname:
             spans = fn(text)
@@ -189,36 +225,28 @@ def segment_for(fname, text):
     return out
 
 
-# Per-source overrides to the blanket "<5 spans" / ">50% of corpus" checks
-# below, each a deliberate, documented exception -- not a loosening to make
-# a number pass. Both were verified by hand, not assumed:
-#   - gdpr_reg2016_679.txt: segment_gdpr() intentionally narrows the raw
-#     (whole-regulation) file down to Article 8 only, which is genuinely just
-#     3 numbered paragraphs plus a heading (verified directly against the raw
-#     text: "Article 8" at line 3713, "Article 9" -- the next article -- at
-#     line 3729). A "<5" floor calibrated for whole-instrument sources doesn't
-#     fit a source deliberately scoped to one short article.
-#   - uk_aadc2.txt: even after fixing the PDF line-wrap/blank-line artifacts
-#     (2413 -> 795 spans, median span length 74 -> 250 chars -- a real
-#     precision improvement, not a workaround), this source is still ~53% of
-#     the corpus. That's not a segmentation bug: the ICO's AADC guidance is a
-#     genuinely much longer document (287KB) than the other four sources'
-#     correctly-scoped extracts (a single GDPR article, the relevant CCPA/
-#     COPPA sections, the CRC's 54 articles) -- once those were fixed down to
-#     their true size, AADC's real size necessarily became a larger share of
-#     a now-much-smaller total. The ceiling is widened for this source
-#     specifically, not raised globally, so the check still catches a
-#     genuine single-source blowout (e.g. if AADC's true share were ever
-#     >75%, or if any OTHER source blew past 50%, this would still fail).
+# Per-source exceptions to the default validation checks (at least 5 spans per
+# source, and no source above 50% of the corpus). Each is a deliberate
+# exception, not a loosened threshold:
+#   - gdpr_reg2016_679.txt: segment_gdpr() narrows the whole regulation to
+#     Article 8, which has only three numbered paragraphs plus a heading, so
+#     the minimum is 4 spans instead of 5.
+#   - uk_aadc2.txt: the ICO code of practice is a much longer document (about
+#     290 KB) than the other sources' scoped extracts (one GDPR article, the
+#     relevant CCPA and COPPA sections, the 54 CRC articles), so it
+#     legitimately makes up about 53% of the spans. Its ceiling is widened to
+#     60% for this source only; any other source above 50%, or the AADC
+#     above 60%, still fails validation.
 MIN_SPANS_OVERRIDE = {"gdpr_reg2016_679.txt": 4}
 MAX_SHARE_OVERRIDE = {"uk_aadc2.txt": 0.60}
 
 
 def validate(provisions):
-    """Fail loudly on structurally implausible segmentation, rather than
-    silently writing a provisions.json with the kind of per-source counts
-    that turned out to be wrong (935 GDPR spans from the whole regulation, 1
-    CCPA span from a file with no blank lines, etc.)."""
+    """Raise RuntimeError on implausible segmentation.
+
+    Checks for duplicate span ids, too few spans per source, and any source
+    making up too large a share of the corpus (the failure mode of, for
+    example, segmenting the whole GDPR, or collapsing CCPA into one span)."""
     errors = []
     by_source = {}
     seen_ids = set()
@@ -266,7 +294,7 @@ def main():
                 "source": fname,
                 "jurisdiction": J,
                 "tau": find_tau(span),
-                "text": span[:STORE_CHARS],       # cap span length for the extractor
+                "text": span[:STORE_CHARS],       # truncated for the extractor
             })
             pid += 1
 

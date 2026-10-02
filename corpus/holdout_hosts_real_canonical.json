@@ -1,0 +1,854 @@
+[
+  {
+    "id": "real001",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a short privacy notice for a mobile app's sign-up flow: we collect the user's email to send product updates, and by signing up the user consents to this. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 9,
+      "J": "US"
+    },
+    "nodes": [
+      {
+        "id": "n0",
+        "type": "DataSubject"
+      },
+      {
+        "id": "n1",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "n2",
+        "type": "DataProcessing"
+      },
+      {
+        "id": "n3",
+        "type": "Withdrawal"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e4",
+        "src": "n0",
+        "tgt": "n1",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e5",
+        "src": "n1",
+        "tgt": "n2",
+        "type": "grants"
+      },
+      {
+        "id": "e6",
+        "src": "n1",
+        "tgt": "n3",
+        "type": "permits"
+      }
+    ],
+    "source_prompt": "Draft a short privacy notice for a mobile app's sign-up flow: we collect the user's email to send product updates, and by signing up the user consents to this.",
+    "source_text": "**Privacy Notice**  \nWe collect your email address solely to send you product updates. By completing the sign‑up, you consent to receive these communications. You may unsubscribe or update your preferences at any time."
+  },
+  {
+    "id": "real002",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a section of a privacy policy describing how long we retain a user's account data after they stop using the service, with no fixed end date -- we keep it as long as needed for our records. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 9,
+      "J": "EU"
+    },
+    "nodes": [
+      {
+        "id": "n7",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "n8",
+        "type": "DurationIndefinite"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e9",
+        "src": "n7",
+        "tgt": "n8",
+        "type": "hasDuration"
+      }
+    ],
+    "source_prompt": "Draft a section of a privacy policy describing how long we retain a user's account data after they stop using the service, with no fixed end date -- we keep it as long as needed for our records.",
+    "source_text": "**Data Retention After Account Termination**\n\nWe retain your account information—including, but not limited to, your profile details, transaction history, communications, and any other data you have provided to us—after you cease using the Service. This data is kept for as long as it is necessary to fulfill the purposes for which it was collected, to comply with legal obligations, to resolve disputes, and to enforce our agreements. There is no predetermined expiration date; we will continue to retain the information until it is no longer required for these legitimate business, legal, or regulatory purposes. When the data is no longer needed, we will securely delete or anonymize it in accordance with applicable data protection laws."
+  },
+  {
+    "id": "real003",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a section of a privacy policy describing that we share a user's personal information with third-party advertising partners for their own marketing purposes. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 9,
+      "J": "UK"
+    },
+    "nodes": [
+      {
+        "id": "ds10",
+        "type": "DataSubject"
+      },
+      {
+        "id": "cp11",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "dp12",
+        "type": "DataProcessing"
+      },
+      {
+        "id": "op15",
+        "type": "Operator"
+      },
+      {
+        "id": "tp16",
+        "type": "ThirdParty"
+      },
+      {
+        "id": "rc18",
+        "type": "RetentionClause"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e13",
+        "src": "ds10",
+        "tgt": "cp11",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e14",
+        "src": "cp11",
+        "tgt": "dp12",
+        "type": "grants"
+      },
+      {
+        "id": "e17",
+        "src": "op15",
+        "tgt": "tp16",
+        "type": "sellsTo"
+      }
+    ],
+    "source_prompt": "Draft a section of a privacy policy describing that we share a user's personal information with third-party advertising partners for their own marketing purposes.",
+    "source_text": "**Sharing Personal Information with Advertising Partners**\n\nWe may disclose certain personal information to third‑party advertising partners (“Partners”) for their own direct marketing and advertising purposes. This sharing enables us and our Partners to deliver personalized ads, measure ad performance, and improve the relevance of promotional content you receive. The categories of information we may share include, but are not limited to:\n\n- Device identifiers (e.g., IP address, mobile advertising IDs, cookie IDs)\n- Demographic data (e.g., age range, gender, location)\n- Browsing and interaction data (e.g., pages visited, clicks, search queries)\n- Transaction and purchase history (e.g., products viewed or purchased)\n- Account information (e.g., email address, user ID) when necessary to match you with relevant advertising offers\n\n**Purpose of Sharing**  \nYour information may be used by Partners to:\n\n1. Serve you targeted advertisements based on your interests and behavior.  \n2. Conduct analytics to assess the effectiveness of ad campaigns and optimize future marketing efforts.  \n3. Create audience segments for look‑alike or retargeting campaigns.  \n4. Deliver promotional offers, newsletters, or other marketing communications on behalf of the Partner.\n\n**How We Protect Your Data**  \nWe require our Partners to adhere to reasonable security standards and to use your information only for the purposes described above. We do not sell your personal information to third parties for their own unrelated business activities.\n\n**Your Choices**  \nYou may opt out of the sharing of your personal information for advertising purposes at any time by:\n\n- Adjusting your device or browser settings to limit or block cookies and mobile advertising IDs.  \n- Using the opt‑out mechanisms provided by the Network Advertising Initiative (NAI), Digital Advertising Alliance (DAA), or the European Interactive Digital Advertising Alliance (EDAA).  \n- Contacting us directly at [privacy@example.com] to request the removal of your data from our advertising partner network.\n\n**International Transfers**  \nIf any of our Partners are located outside your country of residence, your information may be transferred to those jurisdictions. We ensure that such transfers are protected by appropriate safeguards, such as Standard Contractual Clauses or other mechanisms approved under applicable data‑protection laws.\n\n**Retention**  \nPersonal information shared with advertising partners is retained only for as long necessary to fulfill the purposes described in this section, or as required by law. When no longer needed, the data is securely deleted or anonymized."
+  },
+  {
+    "id": "real004",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a consent section for a photo-sharing app aimed at families: uploading a photo means agreeing to our data collection and to our advertising partners receiving usage data for marketing. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 15,
+      "J": "US"
+    },
+    "nodes": [
+      {
+        "id": "ds19",
+        "type": "DataSubject"
+      },
+      {
+        "id": "cp20",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "dp21",
+        "type": "DataProcessing"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e22",
+        "src": "ds19",
+        "tgt": "cp20",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e23",
+        "src": "cp20",
+        "tgt": "dp21",
+        "type": "grants"
+      }
+    ],
+    "source_prompt": "Draft a consent section for a photo-sharing app aimed at families: uploading a photo means agreeing to our data collection and to our advertising partners receiving usage data for marketing.",
+    "source_text": "**Consent for Photo Upload and Data Sharing**\n\nBy uploading a photo to [App Name], you acknowledge and agree to the following:\n\n- **Data Collection:** We will collect and store information associated with your photo (including metadata, location, timestamps, and any user-provided tags) to improve app functionality, personalize your experience, and support community features.\n\n- **Sharing with Advertising Partners:** Your usage data (such as photo view counts, interaction metrics, and demographic information) may be shared with our trusted advertising partners. This data will be used solely for marketing and advertising purposes to deliver relevant content and offers.\n\n- **Purpose of Use:** The collected data will help us:\n  - Enhance app performance and security.\n  - Provide personalized recommendations and features.\n  - Enable targeted advertising and promotional campaigns through our partners.\n\n- **Your Rights:** You may review, modify, or delete your data at any time via the app’s Settings > Privacy section. For more details on how we handle your information, please see our **Privacy Policy** and **Terms of Service**.\n\n**By clicking “Upload” you confirm that you have read, understood, and consent to the collection, storage, and sharing of your data as described above.**"
+  },
+  {
+    "id": "real005",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a section of a privacy policy describing our data collection consent process together with our data retention policy, which keeps data indefinitely for service-improvement purposes. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 15,
+      "J": "EU"
+    },
+    "nodes": [
+      {
+        "id": "ds24",
+        "type": "DataSubject"
+      },
+      {
+        "id": "cp25",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "dp26",
+        "type": "DataProcessing"
+      },
+      {
+        "id": "rc29",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "w30",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "w32",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "rc34",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "rc35",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di36",
+        "type": "DurationIndefinite"
+      },
+      {
+        "id": "rc38",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di39",
+        "type": "DurationIndefinite"
+      },
+      {
+        "id": "rc41",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "rc42",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di43",
+        "type": "DurationIndefinite"
+      },
+      {
+        "id": "rc45",
+        "type": "RetentionClause"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e27",
+        "src": "ds24",
+        "tgt": "cp25",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e28",
+        "src": "cp25",
+        "tgt": "dp26",
+        "type": "grants"
+      },
+      {
+        "id": "e31",
+        "src": "cp25",
+        "tgt": "w30",
+        "type": "permits"
+      },
+      {
+        "id": "e33",
+        "src": "cp25",
+        "tgt": "w32",
+        "type": "permits"
+      },
+      {
+        "id": "e37",
+        "src": "rc35",
+        "tgt": "di36",
+        "type": "hasDuration"
+      },
+      {
+        "id": "e40",
+        "src": "rc38",
+        "tgt": "di39",
+        "type": "hasDuration"
+      },
+      {
+        "id": "e44",
+        "src": "rc42",
+        "tgt": "di43",
+        "type": "hasDuration"
+      }
+    ],
+    "source_prompt": "Draft a section of a privacy policy describing our data collection consent process together with our data retention policy, which keeps data indefinitely for service-improvement purposes.",
+    "source_text": "**Data Collection Consent and Retention**\n\n**1. Consent to Collect and Use Your Data**  \n- **Explicit Consent Required** – Before we collect any personal information, we will obtain your clear, affirmative consent through an opt‑in mechanism (e.g., a checked box, a digital signature, or an explicit “Accept” button).  \n- **Granular Choices** – You may be asked to consent separately for different categories of data (e.g., contact information, usage analytics, location data) and for distinct purposes (e.g., account creation, marketing communications, service improvement).  \n- **Right to Withdraw** – You may withdraw your consent at any time, free of charge, by contacting us at [privacy@yourcompany.com] or using the unsubscribe/opt‑out features provided within the service. Withdrawal of consent will not affect the lawfulness of processing based on consent obtained prior to the withdrawal.  \n- **Documentation of Consent** – We retain a record of each consent event, including the date, time, method of consent, and the specific data categories and purposes to which you agreed.\n\n**2. Data Retention for Service‑Improvement Purposes**  \n- **Indefinite Retention** – Personal data that you provide, as well as data generated through your interaction with our services (e.g., usage logs, preferences, and feedback), will be retained indefinitely for the purpose of improving, developing, and maintaining our services.  \n- **Lawful Basis** – This indefinite retention is based on our legitimate interest in continuously enhancing the functionality, security, and user experience of our offerings, as permitted under applicable data‑protection laws.  \n- **Security Measures** – All retained data is protected by industry‑standard technical and organizational safeguards, including encryption at rest and in transit, access controls, and regular security audits.  \n- **Review and Minimization** – While we retain data indefinitely, we periodically review the data we hold to ensure it remains necessary for the stated service‑improvement purposes. If any data is deemed no longer essential, it will be securely deleted or anonymized.  \n- **Your Rights** – You may request access to, correction of, or deletion of your personal data at any time, subject to applicable legal exemptions. Requests can be submitted to [privacy@yourcompany.com].  \n\nBy continuing to use our services, you acknowledge that you have read, understood, and agree to this consent and retention framework."
+  },
+  {
+    "id": "real006",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a section of a privacy policy stating that a user may withdraw their consent at any time, and separately describing that we retain account data indefinitely after consent is withdrawn. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 15,
+      "J": "UK"
+    },
+    "nodes": [
+      {
+        "id": "ds46",
+        "type": "DataSubject"
+      },
+      {
+        "id": "cp47",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "dp48",
+        "type": "DataProcessing"
+      },
+      {
+        "id": "w51",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "w53",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "w55",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "rc57",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di58",
+        "type": "DurationIndefinite"
+      },
+      {
+        "id": "rc60",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "w61",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "rc63",
+        "type": "RetentionClause"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e49",
+        "src": "ds46",
+        "tgt": "cp47",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e50",
+        "src": "cp47",
+        "tgt": "dp48",
+        "type": "grants"
+      },
+      {
+        "id": "e52",
+        "src": "cp47",
+        "tgt": "w51",
+        "type": "permits"
+      },
+      {
+        "id": "e54",
+        "src": "cp47",
+        "tgt": "w53",
+        "type": "permits"
+      },
+      {
+        "id": "e56",
+        "src": "cp47",
+        "tgt": "w55",
+        "type": "permits"
+      },
+      {
+        "id": "e59",
+        "src": "rc57",
+        "tgt": "di58",
+        "type": "hasDuration"
+      },
+      {
+        "id": "e62",
+        "src": "cp47",
+        "tgt": "w61",
+        "type": "permits"
+      }
+    ],
+    "source_prompt": "Draft a section of a privacy policy stating that a user may withdraw their consent at any time, and separately describing that we retain account data indefinitely after consent is withdrawn.",
+    "source_text": "**Withdrawal of Consent**  \nYou may withdraw your consent to the collection, use, or disclosure of your personal information at any time, free of charge, by contacting us at [privacy@yourcompany.com] or through the account settings page in the Services. Upon receipt of a valid withdrawal request, we will cease any further processing of your data for the purposes for which consent was originally provided, unless otherwise required or permitted by law.\n\n**Retention of Account Data After Withdrawal**  \nNotwithstanding your withdrawal of consent, we will retain certain account‑related data indefinitely, including but not limited to your username, email address, transaction history, and any communications you have sent to us. This retained data is necessary for the ongoing administration of your account, compliance with legal obligations, fraud prevention, and the protection of our legal rights. The continued retention of this information does not constitute further processing of your personal data for the purposes for which consent was withdrawn."
+  },
+  {
+    "id": "real007",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a consent section for a children's education app stating that we require a parent or legal guardian's consent before collecting a child's data. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 21,
+      "J": "US"
+    },
+    "nodes": [
+      {
+        "id": "ds64",
+        "type": "DataSubject"
+      },
+      {
+        "id": "cp65",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "dp66",
+        "type": "DataProcessing"
+      },
+      {
+        "id": "pc69",
+        "type": "ParentalConsent"
+      },
+      {
+        "id": "w71",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "rc73",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "w74",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "rc76",
+        "type": "RetentionClause"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e67",
+        "src": "ds64",
+        "tgt": "cp65",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e68",
+        "src": "cp65",
+        "tgt": "dp66",
+        "type": "grants"
+      },
+      {
+        "id": "e70",
+        "src": "cp65",
+        "tgt": "pc69",
+        "type": "requires"
+      },
+      {
+        "id": "e72",
+        "src": "cp65",
+        "tgt": "w71",
+        "type": "permits"
+      },
+      {
+        "id": "e75",
+        "src": "cp65",
+        "tgt": "w74",
+        "type": "permits"
+      }
+    ],
+    "source_prompt": "Draft a consent section for a children's education app stating that we require a parent or legal guardian's consent before collecting a child's data.",
+    "source_text": "**Parental Consent Required for Collecting Child’s Data**\n\nWe will not collect, use, or share any personal information from a child under the age of 13 without first obtaining verifiable consent from a parent or legal guardian.\n\n**What This Means for You**\n\n- **Consent Needed:** Before we can gather any data (e.g., name, email address, usage statistics, or learning progress) from your child, you must provide explicit, verifiable consent.\n- **Purpose of Data Collection:** The data we collect is used solely to personalize the learning experience, improve the app’s educational content, and comply with applicable laws.\n- **Your Rights:** As a parent or legal guardian, you have the right to:\n  - Review the data we collect about your child.\n  - Request correction or deletion of that data at any time.\n  - Withdraw consent at any time, which will stop further data collection and result in the deletion of any previously collected data, unless retention is required by law.\n- **How to Give Consent:** To provide consent, please:\n  1. Complete the online consent form linked below, or\n  2. Submit a signed consent form via email or fax to the contact information provided.\n- **How to Withdraw Consent:** To withdraw consent, contact us at **privacy@yourapp.com** or call **1‑800‑555‑1234**. We will promptly cease data collection and delete any existing data, unless we are required to retain it for legal reasons.\n\nBy providing your consent, you acknowledge that you have read and understood this statement and agree to allow us to collect and use your child’s data as described above."
+  },
+  {
+    "id": "real008",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a comprehensive privacy policy section covering: what personal data we collect during sign-up and consent, how long we retain it, and whether we share or sell it to third-party advertising partners. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 21,
+      "J": "EU"
+    },
+    "nodes": [
+      {
+        "id": "ds77",
+        "type": "DataSubject"
+      },
+      {
+        "id": "cp78",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "dp79",
+        "type": "DataProcessing"
+      },
+      {
+        "id": "rc82",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "rc83",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di84",
+        "type": "DurationIndefinite"
+      },
+      {
+        "id": "rc86",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "db87",
+        "type": "DurationBounded"
+      },
+      {
+        "id": "rc89",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di90",
+        "type": "DurationIndefinite"
+      },
+      {
+        "id": "op92",
+        "type": "Operator"
+      },
+      {
+        "id": "tp93",
+        "type": "ThirdParty"
+      },
+      {
+        "id": "w95",
+        "type": "Withdrawal"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e80",
+        "src": "ds77",
+        "tgt": "cp78",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e81",
+        "src": "cp78",
+        "tgt": "dp79",
+        "type": "grants"
+      },
+      {
+        "id": "e85",
+        "src": "rc83",
+        "tgt": "di84",
+        "type": "hasDuration"
+      },
+      {
+        "id": "e88",
+        "src": "rc86",
+        "tgt": "db87",
+        "type": "hasDuration"
+      },
+      {
+        "id": "e91",
+        "src": "rc89",
+        "tgt": "di90",
+        "type": "hasDuration"
+      },
+      {
+        "id": "e94",
+        "src": "op92",
+        "tgt": "tp93",
+        "type": "sellsTo"
+      },
+      {
+        "id": "e96",
+        "src": "cp78",
+        "tgt": "w95",
+        "type": "permits"
+      }
+    ],
+    "source_prompt": "Draft a comprehensive privacy policy section covering: what personal data we collect during sign-up and consent, how long we retain it, and whether we share or sell it to third-party advertising partners.",
+    "source_text": "**Privacy Policy – Data Collection, Retention, and Sharing**\n\n**1. Personal Data Collected at Sign‑Up and Through Consent**\n\nWhen you create an account or otherwise provide consent, we may collect the following categories of personal information:\n\n| Category | Examples | Purpose |\n|----------|----------|---------|\n| **Identification** | Full name, email address, phone number, username, password (hashed), government‑issued ID (if required for verification) | Account creation, authentication, and communication |\n| **Demographic Information** | Date of birth, gender, language preference, country of residence | Personalization of services, compliance with age‑related regulations |\n| **Contact Preferences** | Opt‑in/opt‑out choices for newsletters, promotional emails, SMS alerts, push notifications | Managing communications and respecting your marketing preferences |\n| **Device & Technical Data** | IP address, device type, operating system, browser type, cookie identifiers, mobile device IDs | Security, fraud detection, analytics, and improving user experience |\n| **Location Data** | Approximate geolocation derived from IP address or GPS (if you enable location services) | Regional content delivery, fraud prevention, and compliance with local laws |\n| **Consent Records** | Timestamp, method of consent (e.g., checkbox, electronic signature), version of consent text | Legal proof of consent and auditability |\n\nAll data collected is obtained directly from you or through your interaction with our platform (e.g., clicking a consent button). We do not collect any sensitive health, financial, or biometric data unless you voluntarily provide it for a specific feature, in which case we will update this policy accordingly.\n\n**2. Data Retention Periods**\n\nWe retain your personal data only for as long as necessary to fulfill the purposes described in this policy, unless a longer retention period is required or permitted by law. Specific retention timelines are as follows:\n\n| Data Type | Retention Period |\n|-----------|------------------|\n| Account identifiers (name, email, phone, username) | Until account deletion or deactivation, plus a 90‑day grace period for recovery |\n| Authentication credentials (hashed passwords, security tokens) | Until account deletion, plus a 90‑day grace period |\n| Consent records and preference settings | Retained for the duration of the consent plus 2 years for audit purposes |\n| Device & technical data (IP, cookies, device IDs) | 12 months of rolling retention for security and analytics |\n| Location data (derived from IP or GPS) | 12 months of rolling retention |\n| Communication logs (emails, SMS, push notifications) | 24 months from the date of transmission |\n| Transactional or billing information (if applicable) | 7 years to comply with tax and financial regulations |\n\nWhen you request account deletion, we will erase or anonymize your personal data within 30 days, except where retention is required by law (e.g., tax records) or for legitimate business purposes (e.g., fraud prevention). Aggregated, non‑identifiable data may be retained indefinitely for statistical analysis.\n\n**3. Sharing and Sale of Personal Data**\n\n- **Third‑Party Advertising Partners:** We do **not** sell, rent, or otherwise disclose your personal data to third‑party advertising networks, data brokers, or any other entities for their own marketing purposes.\n\n- **Service Providers:** We may share limited personal data with trusted third‑party service providers who perform functions on our behalf (e.g., email delivery, cloud hosting, analytics). Such providers are contractually obligated to use the data solely for the services we specify and are prohibited from using it for any other purpose.\n\n- **Legal Requirements:** We may disclose personal data if required to do so by law, a court order, or governmental request, or to protect the rights, property, or safety of our users, employees, or the public.\n\n- **Business Transfers:** In the event of a merger, acquisition, or sale of all or substantially all of our assets, personal data may be transferred to the acquiring entity, provided the new owner adheres to the privacy commitments set forth in this policy.\n\nAll data transfers to third parties are protected by appropriate contractual safeguards, including data‑processing agreements and standard contractual clauses where required.\n\n**4. Your Rights and Choices**\n\nYou have the right to:\n\n- Access, correct, or delete your personal data;\n- Withdraw consent for marketing communications at any time;\n- Object to or restrict certain processing activities;\n- Request a copy of your data in a portable format;\n- Lodge a complaint with a supervisory authority.\n\nTo exercise any of these rights, please contact us at **"
+  },
+  {
+    "id": "real009",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a section of a privacy policy for a streaming service describing that we process a user's viewing data by collecting it upon sign-up consent, and that we sell aggregated interest data to advertising partners. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 21,
+      "J": "UK"
+    },
+    "nodes": [
+      {
+        "id": "ds97",
+        "type": "DataSubject"
+      },
+      {
+        "id": "cp98",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "dp99",
+        "type": "DataProcessing"
+      },
+      {
+        "id": "w102",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "op104",
+        "type": "Operator"
+      },
+      {
+        "id": "tp105",
+        "type": "ThirdParty"
+      },
+      {
+        "id": "rc107",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di108",
+        "type": "DurationIndefinite"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e100",
+        "src": "ds97",
+        "tgt": "cp98",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e101",
+        "src": "cp98",
+        "tgt": "dp99",
+        "type": "grants"
+      },
+      {
+        "id": "e103",
+        "src": "cp98",
+        "tgt": "w102",
+        "type": "permits"
+      },
+      {
+        "id": "e106",
+        "src": "op104",
+        "tgt": "tp105",
+        "type": "sellsTo"
+      },
+      {
+        "id": "e109",
+        "src": "rc107",
+        "tgt": "di108",
+        "type": "hasDuration"
+      }
+    ],
+    "source_prompt": "Draft a section of a privacy policy for a streaming service describing that we process a user's viewing data by collecting it upon sign-up consent, and that we sell aggregated interest data to advertising partners.",
+    "source_text": "**Viewing Data Collection and Use**\n\n1. **Data We Collect**  \n   When you create an account and agree to our Terms of Service, we may collect information about the content you watch, including titles, genres, playback duration, and interaction events (e.g., pause, rewind, skip). This data is gathered automatically as part of the service’s normal operation and is linked to your user account.\n\n2. **Purpose of Collection**  \n   We use your viewing data to:\n   - Personalize your experience by recommending content that aligns with your interests.  \n   - Improve the performance, reliability, and features of the streaming platform.  \n   - Conduct analytics and research to understand overall audience preferences and trends.\n\n3. **Consent**  \n   By completing the sign‑up process and selecting “I agree” to the consent checkbox, you acknowledge and authorize the collection and processing of your viewing data as described in this section. You may withdraw your consent at any time by updating your account settings or contacting us at privacy@ourstreamingservice.com; however, withdrawing consent may limit certain personalized features.\n\n4. **Sharing of Aggregated Interest Data**  \n   We may create aggregated, de‑identified datasets that reflect the collective viewing habits and interests of our user base (e.g., “30% of users watched drama series in the past month”). These aggregated datasets do **not** contain personally identifiable information (PII) such as your name, email address, or account identifier.  \n   We sell or license these aggregated interest data to third‑party advertising partners and market research firms to help them better target advertisements and understand audience trends. Your individual viewing history is never disclosed to these partners.\n\n5. **Your Rights and Choices**  \n   - **Access & Portability:** You may request a copy of the personal data we hold about you, including your viewing history, by contacting privacy@ourstreamingservice.com.  \n   - **Correction:** If any of your viewing data is inaccurate, you may request correction or deletion.  \n   - **Opt‑Out of Data Sharing:** You can opt out of the sale of aggregated interest data by adjusting the “Data Sharing Preferences” in your account settings. Opting out will not affect your ability to use the core streaming service, but it may limit the relevance of personalized recommendations.  \n   - **Do‑Not‑Track:** Our service does not currently respond to Do‑Not‑Track signals, as the collection of viewing data is essential for providing the service you have requested.\n\n6. **Data Retention**  \n   Viewing data is retained for as long as your account remains active and for a period of up to 24 months after account termination, after which it is anonymized and incorporated into aggregated datasets or securely deleted.\n\n7. **Security Measures**  \n   We employ industry‑standard technical and organizational safeguards—including encryption, access controls, and regular security audits—to protect your viewing data from unauthorized access, alteration, or disclosure.\n\n8. **Contact Information**  \n   For any questions, concerns, or requests regarding your viewing data or this policy, please contact our Data Protection Officer at privacy@ourstreamingservice.com."
+  },
+  {
+    "id": "real010",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a section of a privacy policy describing our account deletion process: when a user closes their account, we retain their data for an unspecified period in case it is needed later. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 9,
+      "J": "US"
+    },
+    "nodes": [
+      {
+        "id": "n110",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "n111",
+        "type": "DurationIndefinite"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e112",
+        "src": "n110",
+        "tgt": "n111",
+        "type": "hasDuration"
+      }
+    ],
+    "source_prompt": "Draft a section of a privacy policy describing our account deletion process: when a user closes their account, we retain their data for an unspecified period in case it is needed later.",
+    "source_text": "**Account Deletion and Data Retention**\n\nWhen you choose to close your account, we will deactivate your profile and cease any further processing of your personal information for the purposes for which it was originally collected. However, we retain certain data associated with your account for a period of time that is not predetermined. This retained information may include, but is not limited to, transaction records, communications, and any other data necessary to:\n\n- Comply with applicable legal, regulatory, or contractual obligations;\n- Resolve disputes, enforce our terms, or protect the rights, property, or safety of our users, employees, or third parties;\n- Recover or restore your account in the event of an accidental or unauthorized closure.\n\nThe duration of this retention will be determined based on the nature of the data, the purpose for which it is retained, and any relevant legal requirements. Once the retention period has elapsed, the retained data will be securely deleted or anonymized in accordance with industry‑standard practices. \n\nIf you have any questions about the data we retain after account closure, or wish to request the deletion of specific information, please contact us at [privacy@example.com]."
+  },
+  {
+    "id": "real011",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a data-sharing disclosure for a children's mobile game: we collect data upon consent during account creation and share device identifiers with advertising partners. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 9,
+      "J": "EU"
+    },
+    "nodes": [
+      {
+        "id": "ds113",
+        "type": "DataSubject"
+      },
+      {
+        "id": "cp114",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "dp115",
+        "type": "DataProcessing"
+      },
+      {
+        "id": "pc118",
+        "type": "ParentalConsent"
+      },
+      {
+        "id": "w120",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "w122",
+        "type": "Withdrawal"
+      },
+      {
+        "id": "rc124",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di125",
+        "type": "DurationIndefinite"
+      },
+      {
+        "id": "rc127",
+        "type": "RetentionClause"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e116",
+        "src": "ds113",
+        "tgt": "cp114",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e117",
+        "src": "cp114",
+        "tgt": "dp115",
+        "type": "grants"
+      },
+      {
+        "id": "e119",
+        "src": "cp114",
+        "tgt": "pc118",
+        "type": "requires"
+      },
+      {
+        "id": "e121",
+        "src": "cp114",
+        "tgt": "w120",
+        "type": "permits"
+      },
+      {
+        "id": "e123",
+        "src": "cp114",
+        "tgt": "w122",
+        "type": "permits"
+      },
+      {
+        "id": "e126",
+        "src": "rc124",
+        "tgt": "di125",
+        "type": "hasDuration"
+      }
+    ],
+    "source_prompt": "Draft a data-sharing disclosure for a children's mobile game: we collect data upon consent during account creation and share device identifiers with advertising partners.",
+    "source_text": "**Data‑Sharing Disclosure for [Game Name]**\n\n- **When we collect data:** We only collect personal information after we receive verifiable parental consent during the account‑creation process.  \n- **What we collect:** With consent, we may collect a child’s username, email address (or parent‑provided contact), and the device identifiers (e.g., IDFA, Android Advertising ID, device model, operating system version).  \n- **How we use the data:** The information is used to create and manage the child’s account, provide game‑related services, and improve the game experience.  \n- **Sharing with advertising partners:** We share the device identifiers (but not the child’s name or email) with third‑party advertising partners so they can deliver age‑appropriate, non‑behavioral ads within the game. These partners are required to use the identifiers only for the purpose of serving ads and are prohibited from linking them to any other personal data.  \n- **Your choices:** Parents may withdraw consent at any time by contacting us at [support@email.com]. Upon withdrawal, we will delete the child’s personal information and stop sharing device identifiers with advertising partners.  \n- **Data retention:** Personal information is retained only as long as the account is active or as required by law. Device identifiers shared with advertising partners are retained in accordance with each partner’s privacy policy.  \n\nFor more details, see our full Privacy Policy at [website URL]."
+  },
+  {
+    "id": "real012",
+    "description": "Real-drafted (Cerebras/gpt-oss-120b), parsed via LLMParser (same model). Source prompt: Draft a section of a privacy policy describing international data transfers: personal data collected during the consent process may be retained indefinitely on servers in multiple countries. [re-parsed 2026-09-20b with enforce_topology=True]",
+    "context": {
+      "A": 9,
+      "J": "UK"
+    },
+    "nodes": [
+      {
+        "id": "ds128",
+        "type": "DataSubject"
+      },
+      {
+        "id": "cp129",
+        "type": "ConsentProcess"
+      },
+      {
+        "id": "dp130",
+        "type": "DataProcessing"
+      },
+      {
+        "id": "rc133",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "rc134",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di135",
+        "type": "DurationIndefinite"
+      },
+      {
+        "id": "rc137",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "rc138",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "rc139",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di140",
+        "type": "DurationIndefinite"
+      },
+      {
+        "id": "rc142",
+        "type": "RetentionClause"
+      },
+      {
+        "id": "di143",
+        "type": "DurationIndefinite"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e131",
+        "src": "ds128",
+        "tgt": "cp129",
+        "type": "subjectOf"
+      },
+      {
+        "id": "e132",
+        "src": "cp129",
+        "tgt": "dp130",
+        "type": "grants"
+      },
+      {
+        "id": "e136",
+        "src": "rc134",
+        "tgt": "di135",
+        "type": "hasDuration"
+      },
+      {
+        "id": "e141",
+        "src": "rc139",
+        "tgt": "di140",
+        "type": "hasDuration"
+      },
+      {
+        "id": "e144",
+        "src": "rc142",
+        "tgt": "di143",
+        "type": "hasDuration"
+      }
+    ],
+    "source_prompt": "Draft a section of a privacy policy describing international data transfers: personal data collected during the consent process may be retained indefinitely on servers in multiple countries.",
+    "source_text": "**International Data Transfers and Retention**\n\nWe may transfer, store, and process the personal data you provide during the consent process on servers located in multiple jurisdictions worldwide. This data may be retained indefinitely, subject only to applicable legal requirements and our legitimate business interests.  \n\n- **Scope of Transfer** – Personal data, including but not limited to name, contact information, demographic details, and any other information you provide when giving consent, may be moved to and accessed from data centers, cloud services, and third‑party processors operating in countries outside your residence.  \n\n- **Legal Basis** – Our continued retention of this data is based on the legitimate interests of maintaining accurate records of consent, complying with regulatory obligations, and enabling the provision of our services.  \n\n- **Safeguards** – Wherever we transfer personal data internationally, we implement appropriate technical and organizational measures to protect it, such as:  \n  - Use of encryption in transit and at rest;  \n  - Access controls and authentication mechanisms;  \n  - Contracts with third‑party processors that contain standard contractual clauses or other approved transfer mechanisms ensuring an adequate level of data protection.  \n\n- **Your Rights** – You may request, at any time, that we delete or restrict the use of your personal data. Such requests will be evaluated in accordance with applicable law and the legitimate interests we rely upon to retain the data.  \n\n- **Retention Period** – Unless you request deletion or a restriction, we may retain your consent‑related personal data indefinitely to fulfill the purposes for which it was collected, including compliance with legal and regulatory obligations.  \n\nBy providing your consent, you acknowledge and agree to the international transfer and indefinite retention of your personal data as described above."
+  }
+]
