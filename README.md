@@ -197,3 +197,9 @@ and `phase2_final_results_part3.py` (results), `phase2_recompute_tables_4_7_8.py
   rule fidelity is a separate step reported in the paper.
 - Statutory text is not legal advice, and repaired policies must be confirmed with counsel.
 
+
+## License
+
+The code is released under the MIT License (see [LICENSE](LICENSE)). The license covers this
+repository's code and documentation only. The statutory texts it processes remain subject to
+their publishers' terms and are not redistributed here.
