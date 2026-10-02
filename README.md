@@ -171,14 +171,6 @@ output is not bit-reproducible even at temperature 0, so expect small difference
 paper's extraction counts. Certification and repair are deterministic given the same
 candidate rules.
 
-### Collecting the Table 5 labels
-
-Table 5 is computed from human labels, never from a model's judgment of its own output.
-`generate_table5_grid('real')` in `run_e2e.py` writes the generated outputs and a blinding
-map. `annotate.py` then shows each annotator the text, the context and an anonymous label
-only. See the docstring at the top of `annotate.py` for the full workflow, including the
-double-annotation subset and Cohen's kappa.
-
 ## The compliance study and audit scripts in `analysis/`
 
 These scripts generate the evaluation documents for six arms (10 prompts, 3 ages, 3
@@ -205,8 +197,3 @@ and `phase2_final_results_part3.py` (results), `phase2_recompute_tables_4_7_8.py
   rule fidelity is a separate step reported in the paper.
 - Statutory text is not legal advice, and repaired policies must be confirmed with counsel.
 
-## Security
-
-`.env` holds API keys and is excluded by `.gitignore`. No key appears anywhere in the source
-tree. Before sharing a fork or an archive, confirm that `.env`, `logs/` and `cache/` are not
-included, since logs record full prompts and responses.
