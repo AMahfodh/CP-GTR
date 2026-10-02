@@ -1,0 +1,36 @@
+# Canonical backbone and attachment table.
+#
+# Single source of truth for the extraction validator (cpgtr/extract.py), the
+# parser (cpgtr/parse.py), and the canonicalization rules kappa
+# (cpgtr/canon.py). A pattern is canonical iff every one of its edges appears
+# in `attach` below, matching both the (source type, target type) pair and the
+# edge type exactly. Direction matters.
+#
+# The backbone is anchored on ConsentProcess rather than on a DataProcessing
+# hub, because that is the structure the parser emits and the hand-written
+# worked-example rules (r_PC, r_WD, r_SALE, r_RET, r_NOTIFY) use. None of them
+# contains a DataProcessing node as an anchor.
+
+backbone_description: >
+  DataSubject --subjectOf--> ConsentProcess --grants--> DataProcessing,
+  with ConsentProcess --permits--> Withdrawal,
+  ConsentProcess --requires--> ParentalConsent,
+  RetentionClause --hasDuration--> DurationBounded|DurationIndefinite,
+  and Operator --sellsTo--> ThirdParty.
+  The edge Operator --permits--> DataProcessing is deliberately not part of
+  the schema. An opt-in parser extension that emits it exists
+  (`RuleParser(enable_d7=True)`) and is off by default: it lowers parser F1
+  (0.90 to 0.85) without improving rule coverage. The canonical schema below
+  is therefore exactly the set of arrangements the default RuleParser can
+  emit, which cpgtr/topology.py checks in assert_attach_matches_parser().
+
+# [source_type, edge_type, target_type]: the only 7 admissible direct
+# connections. Any edge not matching one of these exactly is non-canonical.
+attach:
+  - [DataSubject, subjectOf, ConsentProcess]
+  - [ConsentProcess, grants, DataProcessing]
+  - [ConsentProcess, permits, Withdrawal]
+  - [ConsentProcess, requires, ParentalConsent]
+  - [RetentionClause, hasDuration, DurationBounded]
+  - [RetentionClause, hasDuration, DurationIndefinite]
+  - [Operator, sellsTo, ThirdParty]

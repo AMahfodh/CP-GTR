@@ -1,0 +1,126 @@
+# Equivalence table for the canonicalization rules (kappa).
+#
+# kappa rewrites non-canonical arrangements produced by the extractor or the
+# parser into the canonical backbone defined in schema/attach.yaml. Only the
+# entries under `approved:` are used to build kappa's DPO rules
+# (cpgtr/canon.py). Each entry was approved individually: an arrangement with
+# no approved equivalence here is never mapped. It stays non-canonical and is
+# reported as such (rejected for extracted rules, unparseable structure for
+# hosts).
+#
+# Format: each `approved` entry is `from: [src_type, edge_type, tgt_type]`,
+# `to: [src_type, edge_type, tgt_type]`, plus a one-line `justification`.
+# cpgtr/canon.py (`_kappa_rule_from_entry`) supports exactly two shapes:
+#   - direction flip: same edge_type on both sides, endpoints reversed
+#     (`to` == [tgt_type, edge_type, src_type])
+#   - edge-type relabel: same direction and endpoints, a different edge_type
+#     (`to` == [src_type, edge_type2, tgt_type])
+# Anything else (a node-type substitution, or both changes at once) is not
+# supported by the builder and must not be added under `approved:`.
+
+approved:
+  - from: [DataProcessing, subjectOf, DataSubject]
+    to:   [DataSubject, subjectOf, DataProcessing]
+    justification: >
+      Pure direction normalisation of the same relation (subjectOf), matching
+      the canonical backbone's convention that DataSubject is always the
+      source of a subjectOf edge (DataSubject--subjectOf-->ConsentProcess, see
+      schema/attach.yaml). No legal-meaning change: "X is the subject of Y"
+      reversed is the same fact recorded from the other endpoint.
+
+  - from: [ConsentProcess, permits, DataProcessing]
+    to:   [ConsentProcess, grants, DataProcessing]
+    justification: >
+      Same endpoints, same direction, same relation; extractor word-choice
+      variance on the authorisation edge.
+
+# =========================================================================
+# Arrangements that are deliberately NOT mapped.
+#
+# Every other non-canonical arrangement observed in the extractor and parser
+# output (counted by analysis/topology_inventory.py) was reviewed and
+# rejected. Rejected arrangements are not applied by kappa and remain
+# non-canonical. The list is closed: a specific entry should be re-opened only
+# with new evidence, for example the source text, not by re-opening the whole
+# set. Counts (x N) are occurrences in the inventory.
+#
+# Two further groups are excluded outright because they assert different legal
+# facts:
+#   - DataProcessing--requires-->ConsentProcess is not equivalent to
+#     ConsentProcess--requires-->ParentalConsent (a consent-basis claim is not
+#     a parental-consent-gate claim).
+#   - Operator--permits-->ThirdParty and DataProcessing--permits-->ThirdParty
+#     are not equivalent to Operator--sellsTo-->ThirdParty (permits is not
+#     sellsTo).
+#
+# - from: [DataProcessing, requires, DataSubject]   # x3
+#   REJECTED. "Requires" encodes a genuine precondition or necessity claim,
+#   not identity with the canonical subjectOf relation.
+#
+# - from: [DataProcessing, permits, DataSubject]   # x1
+#   REJECTED. A distinct claim, for the same reason as the requires variant.
+#
+# - from: [Operator, requires, DataProcessing]   # x5
+#   REJECTED. An obligation to process is legally distinct from being
+#   permitted to process.
+#
+# - from: [Operator, grants, DataProcessing]   # x3
+#   REJECTED. "Grants" can imply delegated or third-party authorisation, not
+#   the operator's own permission to process.
+#
+# - from: [DataProcessing, requires, Operator]   # x2 (reverse)
+#   REJECTED. A precondition ("processing needs an operator") is not the same
+#   claim as an authorisation ("operator permits processing") read backwards.
+#
+# - from: [DataProcessing, sellsTo, ThirdParty]   # x10
+#   REJECTED (highest-volume rejection). The processing activity is not a
+#   legal actor. Only the Operator can be the seller in the canonical
+#   Operator--sellsTo-->ThirdParty relation.
+#
+# - from: [DataProcessing, permits, ThirdParty]   # x5
+#   REJECTED. The same conflation as Operator--permits-->ThirdParty ->
+#   sellsTo, with a substituted source node.
+#
+# - from: [ThirdParty, requires, DataProcessing]   # x1 (reversed)
+#   REJECTED. A single occurrence in reversed direction with an unclear
+#   relation to the sale/disclosure family; left non-canonical rather than
+#   force a mapping.
+#
+# - from: [DataProcessing, permits, ConsentProcess]   # x1
+#   REJECTED. Two simultaneous changes against the canonical
+#   ConsentProcess--grants-->DataProcessing (direction and edge type) is more
+#   than a normalisation.
+#
+# - from: [DataProcessing, requires, RetentionClause]   # x3
+#   REJECTED. "Requires a retention clause" is a different relation (an
+#   obligation to have one) from the canonical hasDuration pattern (the
+#   clause's own duration property).
+#
+# - from: [DataProcessing, hasDuration, RetentionClause]   # x1
+#   REJECTED. "The processing has a duration" and "the retention clause has a
+#   duration" have different subjects, so this is not a simple role reversal
+#   of the canonical pattern.
+#
+# - from: [DataProcessing, requires, Withdrawal]   # x2
+#   REJECTED. Two simultaneous substitutions against the canonical
+#   ConsentProcess--permits-->Withdrawal (source node and edge type) is more
+#   than a normalisation.
+#
+# - from: [DataProcessing, permits, Withdrawal]   # x1
+#   REJECTED. Substituting DataProcessing for ConsentProcess is treated as
+#   legally meaningful, not extractor shorthand.
+#
+# - from: [DataProcessing, requires, ParentalConsent]   # x2
+#   REJECTED. Same reasoning as the other proposals that substitute
+#   DataProcessing for ConsentProcess (requires/Withdrawal,
+#   requires/RetentionClause).
+#
+# - from: [ParentalConsent, permits, DataProcessing]   # x1 (reversed)
+#   REJECTED. Reads as a permission claim ("once given, consent authorises
+#   processing"), different in kind from the canonical requirement/gate claim
+#   (ConsentProcess--requires-->ParentalConsent), not the same fact read
+#   backwards.
+#
+# - from: [Operator, requires, Withdrawal]   # x1
+#   REJECTED. An operator-imposed obligation is a different claim from the
+#   consent process granting a withdrawal right.
