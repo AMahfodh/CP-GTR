@@ -1,8 +1,8 @@
-"""Typed directed Semantic Legal Graphs, matching, and isomorphism.
+"""Typed directed graphs (Semantic Legal Graphs), matching and isomorphism.
 
-Attributes (age, jurisdiction) are NOT stored on nodes: per the paper they live
-in the context predicate Phi(A, J), so matching here is purely structural/typed.
-This is what keeps matching decidable and small.
+Nodes and edges carry only a type. Age and jurisdiction are not stored on
+nodes: they live in each rule's context predicate Phi(A, J), so matching here
+is purely structural and typed, which keeps it decidable and small.
 """
 from __future__ import annotations
 import itertools
@@ -11,25 +11,31 @@ _fresh = itertools.count()
 
 
 class Graph:
+    """A typed directed multigraph: node id -> type, edge id -> (src, tgt, type)."""
+
     def __init__(self):
         self.nodes = {}          # id(str) -> type(str)
         self.edges = {}          # id(str) -> (src_id, tgt_id, type)
 
     def copy(self) -> "Graph":
+        """Return a copy that shares no mutable state with this graph."""
         g = Graph()
         g.nodes = dict(self.nodes)
         g.edges = dict(self.edges)
         return g
 
     def add_node(self, nid, ntype):
+        """Add (or retype) node `nid` and return its id."""
         self.nodes[nid] = ntype
         return nid
 
     def add_edge(self, eid, src, tgt, etype):
+        """Add (or replace) edge `eid` from `src` to `tgt` and return its id."""
         self.edges[eid] = (src, tgt, etype)
         return eid
 
     def incident(self, nid):
+        """Ids of all edges with `nid` as source or target."""
         return [e for e, (s, t, _) in self.edges.items() if s == nid or t == nid]
 
     def __repr__(self):
@@ -39,9 +45,10 @@ class Graph:
 
 
 def find_matches(L: Graph, G: Graph):
-    """All injective, type-preserving matches L -> G.
+    """All injective, type-preserving matches of pattern `L` into graph `G`.
 
-    Returns list of {'nodes': node_map, 'edges': edge_map}.
+    Returns a list of {'nodes': node_map, 'edges': edge_map}, mapping L ids to
+    G ids. Distinct L edges map to distinct G edges.
     """
     lnodes = list(L.nodes)
     out = []
@@ -83,10 +90,11 @@ def find_matches(L: Graph, G: Graph):
 
 
 def iso(G1: Graph, G2: Graph, anchor=None):
-    """Return a type-preserving isomorphism G1->G2 (dict) or None.
+    """Return a type-preserving isomorphism G1 -> G2 as a node map, or None.
 
-    `anchor` forces certain G1 node ids to map to fixed G2 ids -- used to keep
-    persistent (surviving) elements aligned for strong joinability.
+    `anchor` forces given G1 node ids to map to fixed G2 ids; it is used to
+    keep persistent (surviving) elements aligned when checking strong
+    joinability.
     """
     if len(G1.nodes) != len(G2.nodes) or len(G1.edges) != len(G2.edges):
         return None
@@ -130,4 +138,5 @@ def iso(G1: Graph, G2: Graph, anchor=None):
 
 
 def new_id(prefix="_"):
+    """Return a fresh, process-unique id string starting with `prefix`."""
     return f"{prefix}{next(_fresh)}"

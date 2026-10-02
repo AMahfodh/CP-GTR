@@ -1,17 +1,48 @@
-"""LLM client for CP-GTR's real (non-demo) mode.
+"""OpenAI-compatible LLM client used by CP-GTR's real (non-demo) mode.
 
+Role in the pipeline: Stage-1 extraction (`extract.py`), the LLM-backed parser
+(`parse.py`) and the LLM-based baselines (`baselines.py`) all receive a
+``complete(prompt) -> str`` callable. `make_complete()` builds that callable on
+top of any OpenAI-compatible ``/chat/completions`` endpoint, adding retries,
+optional token-rate limiting, exact token accounting and a JSONL call log.
 
-Providers (set CPGTR_PROVIDER, default "cerebras" as of 2026-08-08):
-  poe        -- POE_API_KEY.       Free tier, but shared/variable-latency queue.
-  groq       -- GROQ_API_KEY.      Free tier, dedicated LPU serving, fast, but a
-                                    binding 100k-tokens/day cap in practice.
-  cerebras   -- CEREBRAS_API_KEY.  Dev-tier account, ~10x the free-tier rate
-                                    limit; dedicated wafer-scale serving, fast.
-  openrouter -- OPENROUTER_API_KEY. Aggregator; latency depends on routed backend.
-All four expose an OpenAI-compatible /chat/completions endpoint, so switching
-is a base_url + model name + API key change, not a rewrite.
+Provider selection
+------------------
+Set the environment variable ``CPGTR_PROVIDER`` (default ``"cerebras"``) or pass
+``provider=`` to `make_complete()`. Each provider reads its own API key:
 
+  ============  ====================  =========================================
+  provider      key variable          notes
+  ============  ====================  =========================================
+  poe           POE_API_KEY           shared queue; highly variable latency
+  groq          GROQ_API_KEY          fast; free tier has a low daily token cap
+  cerebras      CEREBRAS_API_KEY      fast; default provider
+  openrouter    OPENROUTER_API_KEY    aggregator; latency depends on the backend
+  ============  ====================  =========================================
 
+Switching providers only changes the base URL, default model name and key.
+The model actually used differs between providers (see `PROVIDERS`), so every
+run should record `complete.provider` and `complete.model` alongside its
+results; numbers produced with different underlying models are not directly
+comparable.
+
+Configuration
+-------------
+  1. Copy ``.env.example`` to ``.env`` in the repository root.
+  2. Put the key for your chosen provider in ``.env``, e.g. ``CEREBRAS_API_KEY=...``.
+  3. ``pip install openai``.
+
+``.env`` is read by `load_dotenv()` (a small built-in parser, no extra
+dependency); variables already exported in the shell take precedence. ``.env``
+holds secrets and must never be committed; no key value appears anywhere in
+the source tree.
+
+Outputs
+-------
+Every call is appended to ``logs/llm_calls.jsonl`` (prompt, response, token
+usage, latency, retry count, running totals). Token counts are taken from the
+API's ``usage`` field. Dollar cost is computed only if
+`USD_PER_1K_PROMPT_TOKENS` / `USD_PER_1K_COMPLETION_TOKENS` are set.
 """
 from __future__ import annotations
 import os
@@ -26,7 +57,11 @@ ENV_FILE = REPO_ROOT / ".env"
 LOG_DIR = REPO_ROOT / "logs"
 LOG_FILE = LOG_DIR / "llm_calls.jsonl"
 
-
+# Optional price per 1,000 tokens. Providers differ in how they bill (some use
+# subscription points rather than a flat $/token rate), so no default is
+# assumed. Token counts are always recorded exactly from the API's usage field;
+# set these two constants to your effective rate to also get `cost_usd`.
+# Left as None, cost is reported as unknown rather than guessed.
 USD_PER_1K_PROMPT_TOKENS = None
 USD_PER_1K_COMPLETION_TOKENS = None
 
@@ -34,10 +69,8 @@ PROVIDERS = {
     "poe": {
         "base_url": "https://api.poe.com/v1",
         "api_key_env": "POE_API_KEY",
-        # Verified against a real call on 2026-08-05: Poe's actual bot slug
-        # is "Llama-3.3-70B-T", not the descriptive "Llama-3.3-70B-Instruct"
-        # name the manuscript's prose uses -- same underlying model, Poe's
-        # own naming. Check https://poe.com/ if this bot is renamed/retired.
+        # Poe's bot slug for Llama-3.3-70B-Instruct. Check https://poe.com/
+        # if the bot is renamed or retired.
         "default_model": "Llama-3.3-70B-T",
     },
     "groq": {
@@ -48,7 +81,10 @@ PROVIDERS = {
     "cerebras": {
         "base_url": "https://api.cerebras.ai/v1",
         "api_key_env": "CEREBRAS_API_KEY",
-        # gpt-oss-120b (OpenAI's open-weight 120B model)
+        # gpt-oss-120b (open-weight, 120B parameters). Note that this is not a
+        # Llama-3.3-70B-family model, unlike the defaults of the other
+        # providers; model availability differs per account, so check
+        # `client.models.list()` if a call returns 404.
         "default_model": "gpt-oss-120b",
     },
     "openrouter": {
@@ -57,13 +93,18 @@ PROVIDERS = {
         "default_model": "meta-llama/llama-3.3-70b-instruct",
     },
 }
-
+# Backward-compatible aliases (Poe's values).
 POE_BASE_URL = PROVIDERS["poe"]["base_url"]
 DEFAULT_MODEL = PROVIDERS["poe"]["default_model"]
 
 
 def load_dotenv(path: Path = ENV_FILE) -> None:
+    """Load ``KEY=VALUE`` lines from a ``.env`` file into ``os.environ``.
 
+    Blank lines and ``#`` comments are skipped; values are only stripped of
+    surrounding whitespace (no quoting rules). A variable already present in
+    the environment is never overwritten, so a shell-exported key wins over
+    the file. Does nothing if the file does not exist."""
     if not path.exists():
         return
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -78,8 +119,11 @@ def load_dotenv(path: Path = ENV_FILE) -> None:
 
 @dataclass
 class UsageTotals:
-    """Thread-safe: multiple worker threads call .add() concurrently under
-    the real extraction pipeline's ThreadPoolExecutor."""
+    """Running totals of calls, retries and token usage.
+
+    Thread-safe: worker threads call `add()` concurrently. `cost_usd` is only
+    meaningful when `cost_known` is True (i.e. a per-token rate is configured).
+    """
     calls: int = 0
     retries: int = 0
     prompt_tokens: int = 0
@@ -90,6 +134,7 @@ class UsageTotals:
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
     def add(self, prompt_tokens: int, completion_tokens: int, retries: int = 0) -> None:
+        """Record one completed call."""
         with self._lock:
             self.calls += 1
             self.retries += retries
@@ -102,31 +147,28 @@ class UsageTotals:
                 self.cost_usd += (completion_tokens / 1000) * USD_PER_1K_COMPLETION_TOKENS
 
 
-# Known free-tier tokens-per-minute caps, used as RateLimiter defaults when
-# make_complete() doesn't get an explicit rate_limiter. Verified 2026-08-07:
-# Groq's actual error message reported "Limit 12000" TPM for
-# llama-3.3-70b-versatile on the on-demand tier -- a real run at 8 concurrent
-# workers blew through this almost immediately (many 429s, most 5-item
-# BATCH calls also failed outright since a batch alone can approach this
-# limit). Poe has no comparable published TPM cap (its bottleneck is
-# per-call latency variance, not a hard token budget), so it isn't listed
-# here and gets no default throttle.
+# Tokens-per-minute caps used as RateLimiter defaults when make_complete() is
+# not given an explicit rate_limiter. Groq's on-demand tier reports a limit of
+# 12,000 TPM for llama-3.3-70b-versatile; concurrent workers exceed this almost
+# immediately (HTTP 429), and a single multi-item batch prompt can approach it.
+# Providers without a published cap are not listed and get no default throttle.
 DEFAULT_TPM = {"groq": 12_000}
 
 
 class RateLimiter:
-    """Thread-safe TOKEN-budget limiter over a rolling window (not just a
-    request-count cap): decouples ThreadPoolExecutor's worker count from a
-    provider's tokens-per-minute cap, which -- per real Groq errors seen in
-    this repo's own runs -- is the binding constraint, not
-    requests-per-minute. Callers reserve an ESTIMATED token cost at
-    acquire() time (conservative: based on max_tokens, an upper bound on
-    what the call could use, not the eventual actual usage) since the real
-    count isn't known until the call returns and by then it's too late to
-    have throttled.
+    """Thread-safe token-budget limiter over a rolling time window.
 
-    A request-count cap (`rate`) can be layered on too if a provider has a
-    separate RPM limit, but token budget is the primary mechanism.
+    Decouples the number of worker threads from a provider's tokens-per-minute
+    cap, which is typically the binding constraint rather than requests per
+    minute. Callers reserve an estimated token cost in `acquire()` before
+    sending a request (an upper bound based on ``max_tokens``, since the actual
+    usage is unknown until the call returns). `acquire()` blocks until the
+    reservation fits in the window.
+
+    Args:
+        tokens_per_period: token budget per window (None = unlimited).
+        per_seconds: window length in seconds.
+        rate: optional cap on the number of requests per window.
     """
 
     def __init__(self, tokens_per_period: int | None = None, per_seconds: float = 60.0,
@@ -139,6 +181,8 @@ class RateLimiter:
         self._token_events: list[tuple] = []   # (timestamp, estimated_tokens)
 
     def acquire(self, estimated_tokens: int = 0):
+        """Block until `estimated_tokens` (and one request) fit in the window,
+        then record the reservation."""
         while True:
             with self._lock:
                 now = time.monotonic()
@@ -161,32 +205,36 @@ def make_complete(provider: str | None = None, model: str | None = None,
                    usage: UsageTotals | None = None, log_path: Path = LOG_FILE,
                    rate_limiter: RateLimiter | None = None,
                    max_retries: int = 5, retry_backoff_s: float = 2.0):
-    """Return a `complete(prompt: str) -> str` callable backed by an
-    OpenAI-compatible endpoint for `provider` (env CPGTR_PROVIDER, default
-    "poe"). Thread-safe: safe to call the returned `complete` concurrently
-    from multiple worker threads (ThreadPoolExecutor in extract.py).
+    """Return a ``complete(prompt, max_tokens=...) -> str`` callable.
 
-    If `rate_limiter` isn't given and `provider` has a known tokens-per-
-    minute cap (DEFAULT_TPM), one is constructed automatically -- verified
-    necessary: an unthrottled real run against Groq at 8 concurrent workers
-    hit its 12,000 TPM cap almost immediately (many 429s, and several 5-item
-    BATCH calls failed outright since one batch alone can approach the
-    limit). Each call reserves an estimated token cost (prompt length / 4 as
-    a rough token count, plus max_tokens as the completion budget -- a
-    deliberate over-estimate, since under-reserving is what causes 429s) at
-    the limiter BEFORE sending the request.
+    The callable talks to the OpenAI-compatible endpoint of `provider`
+    (default: env ``CPGTR_PROVIDER``, falling back to ``"cerebras"``) and is
+    safe to call concurrently from multiple worker threads. It also exposes
+    ``.usage`` (a `UsageTotals`), ``.provider`` and ``.model``.
 
-    Logs every call (prompt, response, token usage, retry count, running
-    totals) to `log_path` as JSONL, appended under a lock so concurrent
-    writes never interleave/corrupt a line. Retries transient errors
-    (timeouts, 5xx, connection errors, 429s) up to `max_retries` times with
-    exponential backoff, and reports the retry count explicitly in both the
-    log record and UsageTotals -- the OpenAI SDK's own default silent
-    retries are disabled (max_retries=0 on the client) so this count is
-    complete, not a partial view of what actually happened.
+    Args:
+        provider: key of `PROVIDERS`; None reads ``CPGTR_PROVIDER``.
+        model: model name; None uses the provider's default.
+        temperature: sampling temperature (0.0 for reproducibility).
+        max_tokens: default completion budget; overridable per call.
+        usage: optional shared `UsageTotals` to accumulate into.
+        log_path: JSONL file every call is appended to.
+        rate_limiter: optional `RateLimiter`; if omitted and the provider has
+            an entry in `DEFAULT_TPM`, one is created automatically.
+        max_retries: retries for transient errors (timeouts, 5xx, connection
+            errors, 429s), with exponential backoff (steeper for 429s).
+        retry_backoff_s: base backoff delay in seconds.
 
-    Raises RuntimeError with a clear message (not a cryptic SDK traceback) if
-    the selected provider's API key is not set.
+    Each call reserves an estimated token cost (prompt length // 4 plus
+    ``max_tokens``, a deliberate over-estimate) at the rate limiter before the
+    request is sent. The SDK's own silent retries are disabled
+    (``max_retries=0`` on the client) so the retry count in the log and in
+    `UsageTotals` is complete. Log lines are appended under a lock so
+    concurrent writes never interleave.
+
+    Raises:
+        ValueError: unknown provider.
+        RuntimeError: the provider's API key is not set.
     """
     load_dotenv()
     provider = provider or os.environ.get("CPGTR_PROVIDER", "cerebras")
@@ -213,17 +261,13 @@ def make_complete(provider: str | None = None, model: str | None = None,
     log_lock = threading.Lock()
 
     def complete(prompt: str, max_tokens: int = max_tokens) -> str:
-        # `max_tokens` param shadows the outer default on purpose: callers
-        # that need a bigger completion budget for one call (extract.py's
-        # batch prompts, which ask for several candidates in one JSON array
-        # response -- a real Groq run showed the default single-item budget
-        # truncated batch responses mid-JSON) can pass it per-call without
-        # needing a second client/closure. Existing callers that only ever
-        # pass `prompt` are unaffected.
+        # `max_tokens` shadows the outer default on purpose: callers that need
+        # a larger completion budget for one call (e.g. batch extraction
+        # prompts that return several candidates as one JSON array) can pass it
+        # per call without building a second client.
         if rate_limiter is not None:
-            # Rough, deliberately conservative estimate (chars/4 for prompt
-            # tokens is the standard ballpark for English text) -- better to
-            # over-reserve and wait a bit than under-reserve and 429.
+            # Rough, deliberately conservative estimate (about 4 characters
+            # per token): over-reserving only waits, under-reserving causes 429s.
             estimated = len(prompt) // 4 + max_tokens
             rate_limiter.acquire(estimated_tokens=estimated)
         t0 = time.time()
@@ -242,10 +286,8 @@ def make_complete(provider: str | None = None, model: str | None = None,
                 if attempt >= max_retries:
                     raise
                 retries += 1
-                # A 429 usually tells you almost exactly how long to wait
-                # (Groq's error body includes it) -- back off harder than a
-                # generic transient error to avoid hammering straight back
-                # into the same limit.
+                # Back off more steeply on rate-limit errors than on other
+                # transient errors to avoid immediately hitting the same limit.
                 is_rate_limit = "429" in str(e) or "rate_limit" in str(e).lower()
                 delay = retry_backoff_s * (3 ** attempt) if is_rate_limit else retry_backoff_s * (2 ** attempt)
                 time.sleep(delay)
@@ -283,7 +325,8 @@ def make_complete(provider: str | None = None, model: str | None = None,
 
 def make_poe_complete(model: str = DEFAULT_MODEL, temperature: float = 0.0,
                        usage: UsageTotals | None = None, log_path: Path = LOG_FILE):
-    """Back-compat wrapper: Poe specifically, single-threaded call shape used
-    by existing callers. New code should prefer make_complete()."""
+    """Backward-compatible wrapper around `make_complete()` for Poe.
+
+    New code should call `make_complete()` directly."""
     return make_complete(provider="poe", model=model, temperature=temperature,
                           usage=usage, log_path=log_path)

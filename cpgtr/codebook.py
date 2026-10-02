@@ -1,10 +1,14 @@
-"""Machine-readable mirror of table4_pilot/codebook's four violation
-codes and their "Applies when" conditions. Kept in sync by hand with that
-file (the .md is the human-readable annotator reference; this module is what
-annotate.py uses to only ask about codes that actually apply at a given
-(age, jurisdiction) context, matching the codebook's own annotation
-instructions: "a code that isn't applicable at this context is never
-marked, regardless of the text").
+"""Machine-readable violation codebook used for compliance annotation.
+
+Mirrors the four violation codes and their "Applies when" conditions in
+``docs/table4_pilot/codebook.md`` (the human-readable annotator reference; the
+two must be kept in sync by hand). ``annotate.py`` uses `applicable_codes` to
+ask only about codes that apply at a given (age, jurisdiction) context: a code
+that does not apply in a context is never marked, whatever the text says.
+
+Each entry in `CODES` has the certified rule it corresponds to (``rule``), the
+legal ``citation``, an ``applies(age, jurisdiction)`` predicate and a plain
+``description`` of the violation.
 """
 from __future__ import annotations
 
@@ -52,6 +56,6 @@ CODES = {
 
 
 def applicable_codes(age: int, jurisdiction: str) -> list[str]:
-    """Codes whose "Applies when" condition holds at (age, jurisdiction),
-    in codebook.md's own order."""
+    """Return the codes whose "Applies when" condition holds at (age, jurisdiction),
+    in the codebook's own order."""
     return [code for code, spec in CODES.items() if spec["applies"](age, jurisdiction)]

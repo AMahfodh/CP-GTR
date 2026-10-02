@@ -1,18 +1,27 @@
-"""Stage 3: Refinement.
+"""Stage 3: counterexample-guided refinement of rejected candidate rules.
 
-Wraps certify.admit() (which stays LLM-agnostic, a pure graph algorithm) with
-a refinement loop: a rejected candidate's counterexample -- the offending
-critical pair for a CPA rejection, or the creation-dependency cycle for a
-stratification rejection, both attached to certify.admit()'s log as `detail`
-(see certify.py's admit() docstring) -- is serialized as a FORMAL object and
-returned to the extractor LLM with an instruction to tighten the rule's
-applicability. The manuscript is explicit about why this matters: "the
-feedback signal is a formal object, a critical pair, and not a
-natural-language error string, so the model is corrected against the exact
-structural conflict rather than a paraphrase of it." Bounded to k rounds per
-candidate (k=3, matching the manuscript).
+Role in the pipeline: wraps `certify.admit()` (a pure graph algorithm that stays
+LLM-agnostic) with a refinement loop. When a candidate is rejected, the formal
+counterexample from the admission log (`detail`) is serialized and returned to
+the extractor LLM with an instruction to tighten the rule's applicability:
 
+  * `reject:non-joinable-CP` - the offending critical pair (shared overlap S and
+    the two results H1, H2 that cannot be joined);
+  * `reject:no-measure` - the creation-dependency cycle that prevents a
+    stratification, given as the names of the peer rules in the cycle.
 
+The feedback is a formal object (a critical pair or a dependency cycle) rather
+than a natural-language error string, so the model is corrected against the
+exact structural conflict. Refinement is bounded to `REFINE_ROUNDS` rounds.
+
+Scope: refinement is applied to both rejection categories above. Rules
+rejected by the stratification check are by far the most common rejection on
+real extracted output, so rescuing even a few of them matters. The refinement
+paths are logged separately in the returned ``refine_log``.
+
+Inputs: raw extraction specs (spec dict, source) and an LLM client.
+Outputs: the certified rule list, the final admission log, and the refinement
+log (see `admit_with_refinement`).
 """
 from __future__ import annotations
 import json
@@ -21,10 +30,11 @@ import re
 from .extract import json_to_rule, MAX_TOKENS_PER_ITEM
 from .certify import admit as certify_admit
 
-REFINE_ROUNDS = 3   # CP-GTR_V2.tex Stage 3: "we use k=3"
+REFINE_ROUNDS = 3   # maximum refinement rounds per candidate
 
 
 def _graph_to_json(g):
+    """Serialize a `Graph` to the {"nodes", "edges"} JSON form of the prompts."""
     return {
         "nodes": [{"id": n, "type": t} for n, t in g.nodes.items()],
         "edges": [{"id": e, "src": s, "tgt": t, "type": ty}
@@ -79,6 +89,7 @@ as before, no commentary.
 
 
 def _validate(spec, source):
+    """Return None if `spec` builds a valid Rule, else the error message."""
     try:
         json_to_rule(spec, source=source)
         return None
@@ -87,9 +98,18 @@ def _validate(spec, source):
 
 
 def refine_candidate(complete, spec, detail, status):
-    """One refinement attempt for a single rejected candidate. Returns the
-    revised spec dict, or None if no formal counterexample is available for
-    this status, or the LLM call/response parse failed outright."""
+    """Make one refinement attempt for a single rejected candidate.
+
+    Args:
+        complete: str->str LLM client (called with a per-call ``max_tokens``).
+        spec: the rejected candidate's extraction spec.
+        detail: counterexample attached to the admission log entry (critical
+            pair for `reject:non-joinable-CP`, cycle peers for
+            `reject:no-measure`).
+        status: the rejection status from the admission log.
+
+    Returns the revised spec dict, or None if no formal counterexample is
+    available for this status or the LLM call or its parse failed."""
     if status == "reject:non-joinable-CP" and detail:
         prompt = _CPA_REFINE_PROMPT % {
             "peer": detail["peer"],
@@ -98,13 +118,10 @@ def refine_candidate(complete, spec, detail, status):
             "H1": json.dumps(_graph_to_json(detail["H1"]), indent=2),
             "H2": json.dumps(_graph_to_json(detail["H2"]), indent=2),
         }
-        # The CPA prompt embeds three extra full graphs (S, H1, H2) on top of
-        # the rule itself -- a real run against Cerebras's gpt-oss-120b showed
-        # the default single-item budget (MAX_TOKENS_PER_ITEM) truncating the
-        # response mid-JSON (same failure class as extract.py's batch
-        # truncation bug), which silently masqueraded as "the model can't
-        # refine this" (invalid_response) when it was actually "the response
-        # never finished."
+        # The prompt embeds three extra graphs (S, H1, H2) on top of the rule,
+        # and reasoning models spend part of the budget on hidden reasoning, so
+        # the default single-item budget can truncate the reply mid-JSON. A
+        # truncated reply would be misread as "the model cannot refine this".
         max_tokens = MAX_TOKENS_PER_ITEM * 3
     elif status == "reject:no-measure" and detail and detail.get("cycle_peers"):
         prompt = _STRAT_REFINE_PROMPT % {
@@ -113,7 +130,7 @@ def refine_candidate(complete, spec, detail, status):
         }
         max_tokens = MAX_TOKENS_PER_ITEM * 2
     else:
-        return None   # e.g. reject:cpa-nonterm -- no formal counterexample to hand back
+        return None   # e.g. reject:cpa-nonterm: no formal counterexample to return
 
     try:
         raw = complete(prompt, max_tokens=max_tokens)
@@ -124,43 +141,40 @@ def refine_candidate(complete, spec, detail, status):
 
 def admit_with_refinement(specs, complete, dmax=None, use_cpa=True, use_strat=True,
                            contexts=None, k=REFINE_ROUNDS, verbose=False):
-    """Algorithm 3, Stage 2 (certify.admit) + Stage 3 (refinement) together.
+    """Admission (`certify.admit`) followed by up to `k` refinement rounds.
+
+    Each round admits the current candidates, then asks the LLM to revise every
+    rejected candidate using its formal counterexample; revised candidates that
+    validate join the next round together with the already-admitted ones.
 
     Args:
-        specs: list of (spec_dict, source) pairs -- the raw parsed
-            extraction output BEFORE Rule construction (see extract.py's
-            internal cache entries: {"spec":..., "source":...}). Refinement
-            needs the original spec (not just the built Rule) to show the
-            model "your previous output" and to rebuild a revised Rule from
-            its reply.
-        complete: str->str LLM client for refinement calls (reuses the same
-            client/session as Stage-1 extraction; refinement calls are
-            logged identically via cpgtr.llm).
-        k: refinement rounds (CP-GTR_V2.tex: k=3).
+        specs: list of ``(spec_dict, source)`` pairs: the parsed extraction
+            output before Rule construction. Refinement needs the original
+            spec (not just the built Rule) to show the model its previous
+            output and to rebuild a Rule from the reply.
+        complete: str->str LLM client for refinement calls.
+        dmax, use_cpa, use_strat, contexts, verbose: passed through to
+            `certify.admit` (ablation switches and context cells).
+        k: maximum refinement rounds.
 
-    Returns (cert, log, refine_log):
-        cert, log: same shape as certify.admit()'s return, for the FINAL
-            round (i.e. after refinement, not before).
-        refine_log: list of dicts, one per refinement ATTEMPT (not just
-            successes): {"name", "round", "status_before", "outcome"} with
-            outcome in {"admitted", "still_rejected", "invalid_response"}.
-            The refinement success rate CP-GTR_V2.tex calls a headline
-            result ("the refinement success rate is itself reported as a
-            result") is admitted-outcomes / total attempts from this log.
+    Returns ``(cert, log, refine_log)``:
+        cert, log: same shape as `certify.admit`'s return, for the final round
+            (after refinement).
+        refine_log: one dict per refinement attempt (not only successes):
+            ``{"name", "round", "status_before", "outcome"}`` with outcome in
+            {"admitted", "still_rejected", "invalid_response"}. The refinement
+            success rate is the number of "admitted" outcomes divided by the
+            number of attempts.
 
-    Known simplification: a refinement attempt that returns an unparseable
-    or still-schema-invalid response ("invalid_response") is dropped
-    immediately rather than retried up to k times -- only a response that
-    parses and validates but is still rejected by admission
-    ("still_rejected") gets the full k-round retry budget. This is
-    conservative (it can only under-count how many candidates refinement
-    could have rescued, never over-count), not a correctness bug, but is a
-    literal reading gap relative to "bounded to k rounds" applying uniformly
-    to every failure mode.
+    Known limitation: an attempt whose response is unparseable or fails schema
+    validation ("invalid_response") is dropped immediately, not retried; only a
+    response that validates but is still rejected by admission
+    ("still_rejected") is retried in later rounds. This can only under-count
+    how many candidates refinement could rescue.
     """
     current = list(specs)
     refine_log = []
-    pending = []      # refine_log entries awaiting resolution against the NEXT admit() call
+    pending = []      # refine_log entries awaiting resolution at the next admit()
     round_num = 0
     cert, log = [], []
 
@@ -170,7 +184,7 @@ def admit_with_refinement(specs, complete, dmax=None, use_cpa=True, use_strat=Tr
             try:
                 r = json_to_rule(spec, source=source)
             except Exception:
-                continue   # specs here already passed _validate at least once
+                continue   # these specs have already passed _validate
             candidates.append(r)
             by_name[r.name] = (spec, source)
 

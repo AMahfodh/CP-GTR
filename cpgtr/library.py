@@ -1,7 +1,14 @@
-"""Seed candidate rules -- the stand-in for the Stage-1 LLM extractor output.
+"""Hand-written fixture rules for the worked example and mechanism checks.
 
-REPLACE `synthesize()` with a real extractor: prompt a frozen LLM under the TG
-schema, parse to Rule objects, then feed them to certify.admit unchanged.
+Contains the small rule library of the paper's worked example (additive,
+subtractive and substitutive rules, plus a deliberately conflicting rule that
+certification must reject) and seeded adversarial fixtures used to exercise
+individual certification mechanisms (confluence and stratification).
+
+These are fixtures, not extractor output. `synthesize()` returns the worked-
+example candidate stream for offline smoke tests; reported results use rules
+from the LLM extractor (`cpgtr/extract.py`). `lib.synthesize()` is a
+deliberate placeholder that raises NotImplementedError.
 """
 from .graph import Graph
 from .rules import Rule
@@ -11,8 +18,6 @@ from .rules import Rule
 
 class _Library:
     def synthesize(self):
-        # Replace `...` with toy rules in whatever shape admit() expects.
-        # Kept deliberately tiny and obviously synthetic.
         raise NotImplementedError(
             "Return a small list of TOY rules matching your rule type. "
             "For smoke-testing plumbing only — never for reported results."
@@ -59,17 +64,11 @@ def r_WD():                       # additive, disjoint from r_PC -> should admit
 
 
 def r_BAD():                      # deletes ConsentProcess: conflicts with r_PC
-    # Deliberately the lowest-confidence fixture in this library: r_BAD's L
-    # is a strict copy of r_PC's, under the identical guard, so the two are
-    # symmetrically incompatible -- whichever is admitted first survives, the
-    # other is rejected as non-joinable. There is no structural sense in
-    # which r_BAD is "more wrong" than r_PC other than the narrative role it
-    # plays (CP-GTR_V2.tex's Box 2/3 worked example: certification must
-    # reject the deliberately-injected bad candidate). confidence=0.0 encodes
-    # exactly that role via Algorithm 3's own admission-order mechanism,
-    # rather than relying on synthesize()'s list literal happening to place
-    # it last (see this module's synthesize() docstring, which predates the
-    # confidence field but already documented "highest confidence first").
+    # The deliberately bad candidate of the worked example. Its L is a copy of
+    # r_PC's under the identical guard, so the two are symmetrically
+    # incompatible and whichever is admitted first survives. Confidence 0.0
+    # makes it the last candidate considered, so certification rejects r_BAD
+    # rather than r_PC.
     L = _g([("DS", "DataSubject"), ("CP", "ConsentProcess")],
            [("e1", "DS", "CP", "subjectOf")])
     R = _g([("DS", "DataSubject")], [])
@@ -103,7 +102,17 @@ def r_RET():                      # substitutive: bound an indefinite retention
                 confidence=1.0)
 
 
-
+# --------------------------------------------------------------------------- #
+# Seeded mechanism-validation fixtures: adversarial rules authored to exercise
+# individual certification checks, not outputs of the extractor. The full
+# pipeline rejects r_BAD and r_RET_BAD (confluence) and one of r_FLIP1 and
+# r_FLIP2 (stratification); the ablations admit them. r_NOTIFY produces
+# a multi-step cascade (cascade depth > 1): r_RET creates a DurationBounded
+# node, which is what r_NOTIFY's left-hand side needs, so r_NOTIFY becomes
+# matchable only after r_RET has fired (a creation dependency r_RET ~> r_NOTIFY).
+# A purely additive library such as r_PC and r_WD alone cannot cascade, because
+# nothing one rule adds is a precondition for another.
+# --------------------------------------------------------------------------- #
 def r_NOTIFY():                   # additive; matchable only after r_RET fires
     L = _g([("RC", "RetentionClause"), ("DB", "DurationBounded")],
            [("e1", "RC", "DB", "hasDuration")])
@@ -118,28 +127,23 @@ def r_NOTIFY():                   # additive; matchable only after r_RET fires
                 confidence=1.0)
 
 
-def r_RET_BAD():                  # deletes DurationIndefinite outright: conflicts with r_RET
-    # Deliberately mirrors r_BAD's relationship to r_PC (Box 3), but for
-    # retention instead of consent, and with one addition that matters
-    # operationally: r_BAD's LHS is a strict copy of r_PC's, so whichever of
-    # the two is admitted first always fires first on any host and the other
-    # never gets a chance to run -- meaning admitting r_BAD under --CPA
-    # produces no OBSERVABLE difference on hosts where r_PC is also present.
-    # r_RET_BAD instead carries a WIDER guard (EU, UK) than r_RET (EU only),
-    # so on a UK host it fires completely uncontested -- no ordering trick
-    # needed, and the --CPA/full-pipeline divergence is real and reproducible
-    # regardless of candidate order.
+def r_RET_BAD():                  # deletes DurationIndefinite; conflicts with r_RET
+    # Mirrors r_BAD's relationship to r_PC, but for retention. r_BAD and r_PC
+    # share the same guard, so whichever is admitted first always fires first
+    # and admitting r_BAD without the confluence check changes no observable
+    # outcome. r_RET_BAD has a wider guard (EU, UK) than r_RET (EU only), so on
+    # a UK host it fires uncontested and admitting it without the confluence
+    # check produces a visible difference regardless of candidate order.
     L = _g([("RC", "RetentionClause"), ("DI", "DurationIndefinite")],
            [("e1", "RC", "DI", "hasDuration")])
     R = _g([("RC", "RetentionClause")], [])
     return Rule("r_RET_BAD", L, {"RC"}, set(), R, [],
                 phi=lambda A, J: J in ("EU", "UK"),
-                confidence=0.0)   # deliberately-injected adversarial fixture, same
-                                  # reasoning as r_BAD's confidence=0.0 above
+                confidence=0.0)   # adversarial fixture, as for r_BAD
 
 
-# Two ping-pong rules that LOOP under a naive size measure but are rejected by
-# stratification -- used to make the --Strat ablation produce a real incident.
+# Two ping-pong rules that loop under a naive size measure but are rejected by
+# stratification; they exercise the no-stratification ablation.
 def r_FLIP1():
     L = _g([("X", "TagA")], [])
     R = _g([("X", "TagB")], [])           # relabel via delete+add, size unchanged
@@ -153,7 +157,10 @@ def r_FLIP2():
 
 
 def synthesize():
-    """Extractor stand-in: ordered candidate stream (highest confidence first)."""
+    """Worked-example candidate stream (highest confidence first).
+
+    Offline stand-in for extractor output, for smoke tests only.
+    """
     return [r_PC(), r_WD(), r_SALE(), r_RET(), r_BAD()]
 
 

@@ -1,11 +1,21 @@
-"""Smatch-style scorer for NL -> SLG parsers.
+"""Smatch-style scorer for NL -> Semantic Legal Graph parsers.
 
-Graphs are decomposed into instance triples (node:type) and relation triples
-(src, label, tgt). Because node ids are arbitrary, we search for the node
-alignment (restricted to same-type pairs, which is both correct for instance
-matching and a large search-space reduction) that maximizes matched triples,
-via hill-climbing with random restarts -- the standard Smatch procedure for
-small graphs. Reports micro P/R/F1 overall and per node-type / edge-label.
+Role in the pipeline: measures how well a parser (`RuleParser` or `LLMParser`)
+recovers the hand-labelled gold graphs in ``corpus/gold_parses.json``.
+
+Method: each graph is decomposed into instance triples (a node and its type)
+and relation triples (source, label, target). Node ids are arbitrary, so the
+scorer searches for the node alignment between predicted and gold graphs that
+maximizes the number of matched triples. The search is restricted to
+same-type node pairs, which is correct for instance matching and shrinks the
+search space, and uses hill-climbing with random restarts, the standard Smatch
+procedure for small graphs. Precision, recall and F1 are micro-averaged over
+the corpus, overall and per node type and edge label.
+
+Inputs: a parser object with ``parse(text) -> Document`` and a list of gold
+entries ``{"id", "text", "nodes": [type, ...], "edges": [[src, label, tgt], ...]}``
+(gold edges refer to node positions). Output: the metrics dict returned by
+`score_corpus`.
 """
 from __future__ import annotations
 import random
@@ -28,6 +38,8 @@ def graph_triples(G):
 
 
 def gold_triples(entry):
+    """Return (node_types, edges) for a gold entry, in the same form as
+    `graph_triples`. Gold node ids are their positions in ``entry["nodes"]``."""
     node_types = {i: t for i, t in enumerate(entry["nodes"])}
     edges = [(s, t, lab) for (s, lab, t) in entry["edges"]]   # [s,label,t] -> (s,t,label)
     return node_types, edges
@@ -46,7 +58,19 @@ def _total(mapping, pred_edges, gold_edge_set):
 
 def best_alignment(pred_nodes, pred_edges, gold_nodes, gold_edges,
                    restarts=10, seed=0):
-    """Return (mapping pred_id->gold_id_or_None, best_total_triples)."""
+    """Find the node alignment that maximizes matched triples.
+
+    Args:
+        pred_nodes, gold_nodes: dicts id -> node type.
+        pred_edges, gold_edges: lists of (src, tgt, label).
+        restarts: number of random restarts of the hill-climb.
+        seed: RNG seed (the search is deterministic for a fixed seed).
+
+    Each restart starts from a random injective same-type mapping and
+    repeatedly moves or swaps one node's assignment while the total number of
+    matched instance + relation triples improves. Returns
+    ``(mapping, best_total_triples)`` where `mapping` sends each predicted node
+    id to a gold node id, or None if unmatched."""
     rng = random.Random(seed)
     gold_edge_set = set(gold_edges)
     # candidate gold ids per pred node (same type only)
@@ -106,15 +130,35 @@ def _prf(match, pred, gold):
 
 
 def score_corpus(parser, gold, restarts=10):
-    """Run parser on each gold text; return aggregated metrics."""
+    """Parse every gold text with `parser` and return aggregated metrics.
+
+    Args:
+        parser: object with ``parse(text) -> Document``.
+        gold: list of gold entries (see the module docstring).
+        restarts: hill-climbing restarts per entry.
+
+    Returns a dict with:
+        overall: {"inst", "rel", "all"} -> (precision, recall, F1), micro-averaged.
+        per_node / per_edge: the same triple per node type / edge label.
+        per_item: list of (id, precision, recall, F1) for each gold entry.
+        counts: raw (matched, predicted, gold) triple counts.
+        fallback_count / fallback_ids: entries for which an `LLMParser` fell
+            back to `RuleParser`. A score with a nonzero fallback count
+            partly measures `RuleParser` rather than the parser under test, so
+            report it alongside the scores.
+    """
     agg = {"inst": [0, 0, 0], "rel": [0, 0, 0], "all": [0, 0, 0]}  # match,pred,gold
     per_node = defaultdict(lambda: [0, 0, 0])
     per_edge = defaultdict(lambda: [0, 0, 0])
     per_item = []
+    fallback_ids = []
 
     for entry in gold:
         gN, gE = gold_triples(entry)
-        pN, pE = graph_triples(parser.parse(entry["text"]).graph)
+        doc = parser.parse(entry["text"])
+        if getattr(doc, "parse_fallback", False):
+            fallback_ids.append(entry["id"])
+        pN, pE = graph_triples(doc.graph)
         mapping, _ = best_alignment(pN, pE, gN, gE, restarts=restarts)
 
         # counts
@@ -157,4 +201,6 @@ def score_corpus(parser, gold, restarts=10):
         "per_edge": {l: _prf(*c) for l, c in sorted(per_edge.items())},
         "per_item": per_item,
         "counts": agg,
+        "fallback_count": len(fallback_ids),
+        "fallback_ids": fallback_ids,
     }

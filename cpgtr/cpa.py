@@ -1,8 +1,14 @@
-"""Critical Pair Analysis: overlaps, conflict detection, strong joinability.
+"""Critical pair analysis: overlaps, conflict detection, strong joinability.
 
-This specializes the standard DPO development to typed rules with NACs, for the
-small left-hand sides. It is a reference
-implementation validated on the running examples, not an industrial CPA engine.
+Confluence of a rule set is checked through its critical pairs. `critical_pairs`
+enumerates the minimal overlaps of two rules' left-hand sides in which the two
+rules conflict, and `strongly_joinable` decides whether the two divergent
+results can be rejoined while keeping every persistent element. `cpgtr.certify`
+uses both when admitting candidates.
+
+This specializes the standard double-pushout development to typed rules with
+NACs, for the small left-hand sides (|L| <= 6) the method targets. It is a
+reference implementation, not an industrial critical-pair engine.
 """
 from __future__ import annotations
 from .graph import Graph, find_matches, iso
@@ -10,8 +16,13 @@ from .rules import Rule, applicable, apply_rule, nac_is_closed
 
 
 def overlaps(L1: Graph, L2: Graph):
-    """Jointly-surjective overlaps: identify type-compatible node subsets of L2
-    with nodes of L1. Yields (S, o1, o2)."""
+    """Enumerate jointly-surjective overlaps of two left-hand sides.
+
+    Each overlap identifies a subset of L2's nodes with type-compatible nodes
+    of L1 (injectively); unidentified L2 nodes are added as fresh nodes, and
+    edges are merged. Yields (S, o1, o2), where S is the overlap graph and
+    o1, o2 map the nodes of L1 and L2 into S.
+    """
     l2 = list(L2.nodes)
     partials = []
 
@@ -52,6 +63,7 @@ def overlaps(L1: Graph, L2: Graph):
 
 
 def _match_for(L, S, node_map):
+    """Return the match of `L` into `S` with the given node map, or None."""
     for m in find_matches(L, S):
         if m["nodes"] == node_map:
             return m
@@ -59,14 +71,22 @@ def _match_for(L, S, node_map):
 
 
 def _deleted_nodes(r: Rule, m):
+    """Host nodes deleted by rule `r` under match `m`."""
     return {m["nodes"][n] for n in r.del_nodes()}
 
 
 def _deleted_edges(r: Rule, m):
+    """Host edges deleted by rule `r` under match `m`."""
     return {m["edges"][e] for e in r.del_edges()}
 
 
 def parallel_independent(r1, m1, r2, m2, S) -> bool:
+    """True if the two matches do not conflict, so the overlap is not critical.
+
+    The matches conflict if one rule deletes an element the other uses
+    (delete-use), or if applying one rule makes the other's NACs violated so it
+    is not applicable at its match (produce-forbid).
+    """
     shared_n = set(m1["nodes"].values()) & set(m2["nodes"].values())
     if shared_n & (_deleted_nodes(r1, m1) | _deleted_nodes(r2, m2)):
         return False                                          # delete-use (nodes)
@@ -83,24 +103,26 @@ def parallel_independent(r1, m1, r2, m2, S) -> bool:
 
 
 def persistent(r1, m1, r2, m2, S):
-    """
+    """Nodes of S preserved by both r1 and r2 (the persistent elements).
 
-    Only nodes are returned, not edges, but this does not weaken the check:
-    in this graph model an edge has no identity beyond its (endpoints, type)
-    triple, iso()'s edge comparison already requires X1 and X2 to match
-    exactly on that structural basis, and the dangling condition forces any
-    edge incident to a deleted node to be deleted too -- so a "persistent"
-    edge's endpoints are automatically persistent nodes, and anchoring on
-    persistent nodes already pins down every persistent edge between them.
-    Tracking edges explicitly here would add bookkeeping without changing
-    what strongly_joinable can distinguish.
+    Only nodes are returned, not edges. In this graph model an edge has no
+    identity beyond its (endpoints, type) triple, `iso` already requires an
+    exact structural match of edges, and the dangling condition forces every
+    edge incident to a deleted node to be deleted too. A persistent edge's
+    endpoints are therefore persistent nodes, and anchoring on those nodes pins
+    down every persistent edge between them.
     """
     dead = _deleted_nodes(r1, m1) | _deleted_nodes(r2, m2)
     return [n for n in S.nodes if n not in dead]
 
 
 def critical_pairs(r1: Rule, r2: Rule):
-    """Conflicting minimal overlaps of r1, r2 (parallel-independent ones dropped)."""
+    """Critical pairs of rules r1 and r2.
+
+    For each minimal overlap of the two left-hand sides in which both rules are
+    applicable and conflict, returns (S, H1, H2, pers): the overlap graph, the
+    results of applying r1 and r2 to it, and the persistent nodes.
+    """
     cps = []
     for S, o1, o2 in overlaps(r1.L, r2.L):
         m1, m2 = _match_for(r1.L, S, o1), _match_for(r2.L, S, o2)
@@ -116,23 +138,29 @@ def critical_pairs(r1: Rule, r2: Rule):
 
 
 def _nac_consistent(trace) -> bool:
-    """Conservative NacConsistent(d) (Algorithm "StronglyJoinable"):
-    every rule fired along `trace` (a list of (rule, match) pairs, as returned
-    by rules.normal_forms) must carry only "closed" NACs (rules.nac_is_closed).
-    An open NAC could in principle be satisfied by unrelated structure a
-    future embedding adds, retroactively blocking a step that fired here --
-    which would invalidate the joinability argument once this critical pair
-    is embedded in a real host, so such a derivation is rejected rather than
-    trusted."""
+    """Conservative NAC-consistency of a derivation.
+
+    Every rule fired along `trace` (a list of (rule, match) pairs, as returned
+    by `rules.normal_forms`) must carry only closed NACs (`rules.nac_is_closed`).
+    An open NAC could be satisfied by unrelated structure that a later
+    embedding into a larger host adds, retroactively blocking a step that fired
+    in the small overlap graph and invalidating the joinability argument. Such
+    derivations are rejected rather than trusted. This is sound but incomplete:
+    it catches disconnected NACs but not every possible future embedding.
+    """
     return all(nac_is_closed(rule, nac)
                for rule, _m in trace for nac in rule.nacs)
 
 
 def strongly_joinable(H1: Graph, H2: Graph, pers, rules) -> bool:
-    """Exists common normal form, reached by NAC-consistent derivations on
-    both branches, on which every persistent element survives and is
-    identified consistently (strong NAC-joinability, CP-GTR_V2.tex Definition
-    "Strong joinability")."""
+    """Strong NAC-joinability of a critical pair.
+
+    True if H1 and H2 have a common normal form under `rules`, reached by
+    NAC-consistent derivations on both branches, in which every persistent
+    node `pers` survives and is identified consistently (isomorphism anchored
+    on `pers`). May raise RuntimeError if the normal-form search exceeds its
+    step budget.
+    """
     from .rules import normal_forms
     nf1 = normal_forms(rules, H1)
     nf2 = normal_forms(rules, H2)
