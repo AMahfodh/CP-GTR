@@ -1,26 +1,38 @@
-"""annotate.py -- blinded annotation CLI.
+"""annotate.py -- blinded human annotation for the Table 5 compliance study.
 
-Reads cache/table5_generation.json (real per-arm output text, produced by
-run_e2e.py: generate_table5_grid('real')) and cache/table5_blind_map.json (a
-hidden, seeded shuffle of method name -> anonymous "Output A".."Output E"
-label per pair, generated at the same time). The annotator is shown ONLY the
-prompt, context, and anonymized label -- never the real method name --
-against docs/table4_pilot/codebook.md's violation codes, filtered to the
-codes applicable at that item's (age, jurisdiction). "Without blinding the
-comparison is worthless" -- this is not optional.
+Table 5 (contextual compliance rate) is computed from human violation labels,
+not from any model's self-assessment. This tool collects those labels so that
+the annotator never sees which method produced which output.
 
-Usage:
-    python annotate.py --annotator NAME              # full 75-item queue
-    python annotate.py --annotator NAME --overlap    # 20% double-annotation subset only
-    python annotate.py --kappa NAME1 NAME2           # Cohen's kappa on the overlap subset
-    python annotate.py --export [--annotator NAME]   # un-blind -> cache/table5_annotations.json
+Inputs (written beforehand by ``run_e2e.py``, ``generate_table5_grid('real')``):
+    cache/table5_generation.json   per-prompt context (age A, jurisdiction J)
+                                   and the real output text of each method
+    cache/table5_blind_map.json    seeded shuffle that maps each anonymous label
+                                   "A".."E" to a method name, per prompt
+The violation codes come from ``cpgtr/codebook.py``, which mirrors
+``docs/table4_pilot/codebook.md``. For each output the annotator is shown only
+the text, the context and the anonymous label, and is asked about the codes
+that apply at that (age, jurisdiction).
 
-Resumable: labels are saved to cache/table5_labels_<NAME>.json after every
-single answer, and already-answered items are skipped on restart. The
---overlap pass writes to a SEPARATE cache/table5_labels_<NAME>_overlap.json
-so it always asks fresh, even if the same annotator already covered those
-items in a full pass -- the point is an independent second judgment for
-inter-annotator reliability, not a resumed continuation of the first.
+Outputs (all under ``cache/``):
+    table5_labels_<NAME>.json          labels from the full pass
+    table5_labels_<NAME>_overlap.json  labels from the double-annotation pass
+    table5_annotations.json            un-blinded labels per method (--export)
+
+Usage, from the repository root:
+    python annotate.py --annotator NAME              # full queue of blinded outputs
+    python annotate.py --annotator NAME --overlap    # ~20% double-annotation subset
+    python annotate.py --kappa NAME1 NAME2           # Cohen's kappa, overlap subset
+    python annotate.py --export [--annotator NAME]   # un-blind, write annotations
+    python annotate.py --csv-export PATH [--overlap] # blinded spreadsheet to fill in
+    python annotate.py --csv-import PATH --annotator NAME [--overlap]
+
+Labels are saved after every answer and answered items are skipped when the
+tool is restarted. The ``--overlap`` pass writes to a separate file, so it
+always asks again even if the same annotator already covered those items in
+the full pass. The aim is an independent second judgment for the reliability
+statistics. ``--kappa`` with the same name twice reports self-consistency
+(full pass versus overlap pass) rather than inter-annotator agreement.
 """
 from __future__ import annotations
 import argparse
@@ -31,9 +43,9 @@ import os
 import random
 import sys
 
-# Real LLM-generated output text can contain unicode punctuation (e.g. a
-# non-breaking hyphen) outside Windows' default cp1252 console encoding --
-# reconfigure before printing any of it rather than crashing mid-annotation.
+# Generated text can contain Unicode punctuation (e.g. a non-breaking hyphen)
+# that the default Windows console encoding cannot print; use UTF-8 so that
+# printing it does not raise an error mid-annotation.
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -66,8 +78,10 @@ def _save_json(path, data):
 
 
 def _overlap_pair_ids(generation):
-    """Deterministic ~20% subset of pair_ids, seeded independently of the
-    generation/blinding seeds so it isn't guessable from those."""
+    """Return a deterministic subset (about 20%) of the prompt-pair ids.
+
+    The subset uses its own seed, independent of the generation and blinding
+    seeds."""
     pair_ids = sorted(generation.keys())
     if not pair_ids:
         return []
@@ -114,8 +128,8 @@ def cmd_annotate(name, overlap):
     for pair_id, label in todo:
         item = generation[pair_id]
         age, jurisdiction = item["context"]["A"], item["context"]["J"]
-        text = item[blind_map[pair_id][label]]   # real method name looked up,
-                                                   # NEVER printed
+        text = item[blind_map[pair_id][label]]   # method name is looked up here
+                                                   # and is never printed
         codes = applicable_codes(age, jurisdiction)
 
         print("=" * 78)
@@ -178,11 +192,11 @@ def cmd_kappa(name1, name2):
     overlap_ids = set(_overlap_pair_ids(generation))
 
     if name1 == name2:
-        # Self-consistency (test-retest), not inter-annotator: compare this
-        # annotator's FIRST judgment (their full pass, restricted to the
-        # overlap subset) against their INDEPENDENT second judgment (the
-        # --overlap pass) -- comparing the overlap file to itself would be a
-        # trivial, guaranteed-1.0 no-op, not a real check.
+        # Self-consistency (test-retest) rather than inter-annotator: compare
+        # the annotator's first judgment (the full pass, restricted to the
+        # overlap subset) with their independent second judgment (the
+        # --overlap pass). Comparing the overlap file with itself would
+        # always give 1.0.
         labels1, path1 = _load_labels_for_kappa(name1, prefer_overlap=False)
         labels2, path2 = _load_labels_for_kappa(name2, prefer_overlap=True)
         if path1 == path2:
@@ -234,8 +248,10 @@ def cmd_kappa(name1, name2):
 
 
 def _cohens_kappa(rater1, rater2):
-    """Standard 2-rater Cohen's kappa over paired boolean judgments, pooled
-    across every (item, applicable-code) instance in the overlap subset."""
+    """Cohen's kappa for two raters over paired boolean judgments.
+
+    The judgments are pooled across every (item, applicable code) pair in the
+    overlap subset. Returns 1.0 when chance agreement is already 1."""
     n = len(rater1)
     po = sum(a == b for a, b in zip(rater1, rater2)) / n
     p1_yes = sum(rater1) / n
@@ -317,10 +333,11 @@ def _format_applicable(codes):
 
 
 def cmd_csv_export(path, overlap):
-    """Write a survey-style CSV: one row per (pair, blinded output), with an
-    empty `violations_found` column for a reviewer to fill in a spreadsheet.
-    Blinding is preserved exactly as in the interactive CLI -- output_label
-    is "A".."E", never the real method name."""
+    """Write a spreadsheet for annotation: one row per (pair, blinded output).
+
+    The `violations_found` column is left empty for the reviewer. Blinding is
+    the same as in the interactive tool: output_label is "A".."E", never the
+    method name."""
     generation = _load_json(GENERATION, None)
     blind_map = _load_json(BLIND_MAP, None)
     if generation is None or blind_map is None:
@@ -344,8 +361,8 @@ def cmd_csv_export(path, overlap):
         })
 
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    # utf-8-sig: real LLM output can contain non-ASCII punctuation; the BOM
-    # makes Excel on Windows render it correctly instead of mangling it.
+    # utf-8-sig: generated text can contain non-ASCII punctuation; the BOM
+    # makes Excel on Windows display it correctly.
     with open(path, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
         w.writeheader()
@@ -359,13 +376,13 @@ def cmd_csv_export(path, overlap):
 
 
 def cmd_csv_import(path, name, overlap):
-    """Read a filled-in survey CSV back and merge it into
-    cache/table5_labels_<name>(_overlap).json -- the same storage format the
-    interactive CLI uses, so --kappa/--export work unchanged regardless of
-    which workflow produced the labels. Only rows with a non-blank
-    'violations_found' are recorded; existing answers for other items in the
-    same label file are preserved (safe to import an in-progress CSV more
-    than once as more rows get filled in)."""
+    """Merge a filled-in annotation CSV into the labels file for `name`.
+
+    The target is cache/table5_labels_<name>(_overlap).json, the same format
+    the interactive tool uses, so --kappa and --export work with either
+    workflow. Only rows with a non-blank 'violations_found' are recorded;
+    existing answers for other items are kept, so a partly filled CSV can be
+    imported repeatedly. Rows with unknown codes are reported and skipped."""
     generation = _load_json(GENERATION, None)
     if generation is None:
         raise SystemExit(f"Missing {GENERATION}.")

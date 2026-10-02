@@ -1,9 +1,21 @@
-"""legisafe_eval.py -- regenerates every result table from results.json.
+"""legisafe_eval.py -- regenerate the result tables from a results.json file.
 
+Role in the pipeline: ``run_e2e.py`` performs the measurements and writes
+``results.json``; this script only reads that file and prints the tables
+again. It does no computation of its own: no LLM calls, no certification and
+no repair experiments, so it is deterministic and costs nothing to run. It
+imports the table layout constants and the ablation-table printer from
+``run_e2e.py``, so both scripts format the tables identically.
 
+Input:  ``results.json`` (default, in the working directory), with a ``meta``
+        block (run mode, provider, model, temperature, sampling seed) and a
+        ``tables`` block (``table4``, ``table5``, ``table6``, ``table7a``,
+        ``table8b``). A table that is absent or null in the file is skipped;
+        a table that was not run is reported as such.
+Output: the tables printed to stdout (Tables 4-8 of the paper).
 
-Usage:
-    python run_e2e.py                # measure, write results.json
+Usage, from the repository root:
+    python run_e2e.py                # measure, then write results.json
     python legisafe_eval.py          # render tables from results.json
     python legisafe_eval.py --path other_results.json
 """
@@ -50,7 +62,7 @@ def render_table6(data):
     print("-" * 48)
     print(f"{'SLG triplet extraction':<24}{p:8.2f}{r:8.2f}{f:8.2f}")
     print("No audited false-negative rate is reported: that review has not "
-          "been conducted (CP-GTR_V2.tex sec:metrics item 4).")
+          "been conducted.")
 
 
 def render_ablation(title, rows, cols=ABLATION_COLS, labels=ABLATION_LABELS,

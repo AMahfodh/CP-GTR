@@ -1,0 +1,16 @@
+# The core pipeline (graph engine, certification, offline demo run, unit tests)
+# uses only the Python standard library (developed and tested on Python 3.11;
+# 3.10 or newer is recommended). The packages below are needed only for the
+# optional steps noted.
+
+# Real-LLM mode (CPGTR_MODE=real): every supported provider is reached through
+# the OpenAI SDK with a provider-specific base_url (see cpgtr/llm.py).
+openai>=1.0
+
+# Corpus download (corpus/download_corpus.py).
+requests>=2.28
+beautifulsoup4>=4.11
+lxml>=4.9
+
+# Annotation-workbook builders in analysis/ (read and write .xlsx).
+openpyxl>=3.0
