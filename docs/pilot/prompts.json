@@ -1,0 +1,7 @@
+[
+  {"id": "prompt_signup",  "text": "Draft a short section for a mobile app's sign-up flow describing that we collect the user's email address to send product updates, and that by signing up the user consents to this processing."},
+  {"id": "prompt_retention", "text": "Draft a section of a privacy policy describing how long we retain a user's account data after they stop using the service."},
+  {"id": "prompt_thirdparty", "text": "Draft a section of a privacy policy describing whether we share or sell a user's personal information with third-party advertising partners."},
+  {"id": "prompt_kids_photo", "text": "Draft a consent section for a photo-sharing app aimed at families, describing what happens when a user uploads photos and how their account data is processed."},
+  {"id": "prompt_withdraw",   "text": "Draft a section of a privacy policy describing a user's rights regarding the consent they gave for data processing."}
+]

@@ -1,0 +1,137 @@
+[
+  {
+    "id": "prompt_signup__A9_EU",
+    "prompt_id": "prompt_signup",
+    "prompt_text": "Draft a short section for a mobile app's sign-up flow describing that we collect the user's email address to send product updates, and that by signing up the user consents to this processing.",
+    "context": {
+      "A": 9,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_signup__A15_EU",
+    "prompt_id": "prompt_signup",
+    "prompt_text": "Draft a short section for a mobile app's sign-up flow describing that we collect the user's email address to send product updates, and that by signing up the user consents to this processing.",
+    "context": {
+      "A": 15,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_signup__A21_EU",
+    "prompt_id": "prompt_signup",
+    "prompt_text": "Draft a short section for a mobile app's sign-up flow describing that we collect the user's email address to send product updates, and that by signing up the user consents to this processing.",
+    "context": {
+      "A": 21,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_retention__A9_EU",
+    "prompt_id": "prompt_retention",
+    "prompt_text": "Draft a section of a privacy policy describing how long we retain a user's account data after they stop using the service.",
+    "context": {
+      "A": 9,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_retention__A15_EU",
+    "prompt_id": "prompt_retention",
+    "prompt_text": "Draft a section of a privacy policy describing how long we retain a user's account data after they stop using the service.",
+    "context": {
+      "A": 15,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_retention__A21_EU",
+    "prompt_id": "prompt_retention",
+    "prompt_text": "Draft a section of a privacy policy describing how long we retain a user's account data after they stop using the service.",
+    "context": {
+      "A": 21,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_thirdparty__A9_EU",
+    "prompt_id": "prompt_thirdparty",
+    "prompt_text": "Draft a section of a privacy policy describing whether we share or sell a user's personal information with third-party advertising partners.",
+    "context": {
+      "A": 9,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_thirdparty__A15_EU",
+    "prompt_id": "prompt_thirdparty",
+    "prompt_text": "Draft a section of a privacy policy describing whether we share or sell a user's personal information with third-party advertising partners.",
+    "context": {
+      "A": 15,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_thirdparty__A21_EU",
+    "prompt_id": "prompt_thirdparty",
+    "prompt_text": "Draft a section of a privacy policy describing whether we share or sell a user's personal information with third-party advertising partners.",
+    "context": {
+      "A": 21,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_kids_photo__A9_EU",
+    "prompt_id": "prompt_kids_photo",
+    "prompt_text": "Draft a consent section for a photo-sharing app aimed at families, describing what happens when a user uploads photos and how their account data is processed.",
+    "context": {
+      "A": 9,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_kids_photo__A15_EU",
+    "prompt_id": "prompt_kids_photo",
+    "prompt_text": "Draft a consent section for a photo-sharing app aimed at families, describing what happens when a user uploads photos and how their account data is processed.",
+    "context": {
+      "A": 15,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_kids_photo__A21_EU",
+    "prompt_id": "prompt_kids_photo",
+    "prompt_text": "Draft a consent section for a photo-sharing app aimed at families, describing what happens when a user uploads photos and how their account data is processed.",
+    "context": {
+      "A": 21,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_withdraw__A9_EU",
+    "prompt_id": "prompt_withdraw",
+    "prompt_text": "Draft a section of a privacy policy describing a user's rights regarding the consent they gave for data processing.",
+    "context": {
+      "A": 9,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_withdraw__A15_EU",
+    "prompt_id": "prompt_withdraw",
+    "prompt_text": "Draft a section of a privacy policy describing a user's rights regarding the consent they gave for data processing.",
+    "context": {
+      "A": 15,
+      "J": "EU"
+    }
+  },
+  {
+    "id": "prompt_withdraw__A21_EU",
+    "prompt_id": "prompt_withdraw",
+    "prompt_text": "Draft a section of a privacy policy describing a user's rights regarding the consent they gave for data processing.",
+    "context": {
+      "A": 21,
+      "J": "EU"
+    }
+  }
+]
